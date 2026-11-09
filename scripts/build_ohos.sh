@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# 构建 Saber 的鸿蒙 / HarmonyOS NEXT HAP 包。
+#
+# 用法:
+#   bash scripts/build_ohos.sh                # release 构建
+#   bash scripts/build_ohos.sh --debug        # debug 构建
+#
+# 前置条件:
+#   * 准备好 Flutter-OH SDK + DevEco 命令行工具,并 source 过环境变量
+#     (见 ../docs/ohos.md 中的"环境准备"一节);
+#   * toolchain/ 下的 SDK 修补脚本已经执行过一次(见 docs/ohos.md)。
+#
+# 产物: build/ohos/hap/entry-default-signed.hap
+# ---------------------------------------------------------------------------
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+REPO_ROOT="$(pwd)"
+
+# toolchain/ohos 目录: 与 saber 仓库放在一起,路径可移植
+# shellcheck disable=SC1091
+source "$REPO_ROOT/toolchain/ohos/common.sh"
+
+BUILD_MODE="release"
+for arg in "$@"; do
+  case "$arg" in
+    --debug)   BUILD_MODE="debug" ;;
+    --profile) BUILD_MODE="profile" ;;
+    --release) BUILD_MODE="release" ;;
+    *) echo "未知参数: $arg"; exit 1 ;;
+  esac
+done
+
+# release/profile 需要 AOT,依赖 toolchain 侧的 Wine 版 gen_snapshot。
+# 详见 docs/ohos.md §4.9。
+if [ "$BUILD_MODE" != "debug" ]; then
+  GEN_SNAP="$FLUTTER_ROOT/bin/cache/artifacts/engine/ohos-arm64-release/linux-x64/gen_snapshot"
+  if [ ! -x "$GEN_SNAP" ]; then
+    echo "错误: 缺少 ohos AOT 用的 gen_snapshot" >&2
+    echo "  期望: $GEN_SNAP" >&2
+    echo "  修复: bash \"$TOOLCHAIN_DIR/setup_ohos_aot.sh\"" >&2
+    exit 1
+  fi
+fi
+
+if ! command -v flutter > /dev/null 2>&1; then
+  echo "错误:找不到 flutter,请先 source 鸿蒙构建环境的 env.sh" >&2
+  exit 1
+fi
+
+echo "==> 1/5 应用第三方依赖补丁(patches/ohos)"
+bash "$REPO_ROOT/patches/ohos/apply_ohos_patches.sh"
+
+echo "==> 2/5 解析依赖"
+# 依赖覆盖文件放在 toolchain/ohos/ 下,这里复制到仓库根目录 ——
+# pub 只会读根目录的 pubspec_overrides.yaml。
+# 不这么做的话,与鸿蒙无关的构建也会被强制拉取 gitcode 上的鸿蒙分支插件。
+# 根目录那份已在 .gitignore 里,不会被提交。
+cp -f "$TOOLCHAIN_DIR/pubspec_overrides.yaml" "$REPO_ROOT/pubspec_overrides.yaml"
+
+# `flutter pub get` 会顺带检查 HarmonyOS SDK。在这个"命令行工具 + 独立 SDK"
+# 的混合布局下,它会打印 "No Hmos SDK found" 并返回 1 —— 但依赖其实已经
+# 解析成功了(紧跟着的 `flutter build hap` 内部还会再跑一次 pub get 并正常
+# 找到 SDK)。所以这里只把"真的解析失败"当错误。
+#
+# 依赖解析成功时 pub 会打印两种消息之一:
+#   "Got dependencies!"                —— 锁文件本来就是对的,没变化
+#   "Changed N dependencies!"          —— 锁文件需要更新(例如首次带覆盖构建)
+# 两种都算成功。
+if ! flutter pub get 2>&1 | tee /tmp/saber_pubget.log; then
+  if grep -q "No Hmos SDK found" /tmp/saber_pubget.log && \
+     grep -qE "(Got|Changed [0-9]+) dependencies" /tmp/saber_pubget.log; then
+    echo "    (忽略:只是 SDK 探测告警,依赖已解析完成)"
+  else
+    echo "错误:flutter pub get 失败" >&2
+    exit 1
+  fi
+fi
+
+echo "==> 3/5 准备签名材料 + 写入 build-profile.json5"
+# 仓库里提交的是「模板」:storePassword / keyPassword 是空串,
+# 因为这两个字段是 hvigor 用的 AES 密文,和你的密钥库绑定,不能进版本库。
+#
+# prepare_signing.sh 会按 ohos/signing/ 里已有的材料自动选一条路:
+#   * AGC(华为账号)签发的材料 -> 校验证书与 profile 是否配套
+#   * OpenHarmony 社区证书     -> 直接写配置
+#   * 什么都没有               -> 现场生成社区证书
+bash "$TOOLCHAIN_DIR/prepare_signing.sh"
+
+echo "==> 4/5 构建 HAP ($BUILD_MODE)"
+# OHOS: 本工程用 --target-os=linux 编 AOT(见 docs/ohos.md §4.9),
+# 这会让 Platform.isLinux 变成编译期常量 true,框架会把鸿蒙误判成桌面 Linux。
+# 这个 dart-define 打开 toolchain/patch_ohos_aot_platform.py 加的开关,
+# 强制把 defaultTargetPlatform 判为 ohos。对鸿蒙构建始终是正确的。
+flutter build hap --"$BUILD_MODE" \
+  --dart-define=FLUTTER_OHOS_AOT_BUILD=true
+
+echo "==> 5/5 完成"
+find build/ohos -name "*.hap" -exec ls -lh {} \;
+
+cat <<'EOF'
+
+提示:
+  * 若 signing/app.p7b 是 AGC(华为账号)签发的调试 Profile,则该 HAP
+    可直接安装到 Profile 白名单里的 HarmonyOS 真机(如 MatePad Edge)。
+  * 若用的是 SDK 自带的 OpenHarmony 社区证书,只能装到 OpenHarmony 设备
+    与 DevEco 模拟器 —— 真机报 code:9568257 (fail to verify pkcs7 file)。
+  * 安装:bash toolchain/ohos/install_on_device.sh
+  详见 docs/ohos.md 的"真机安装"一节。
+EOF

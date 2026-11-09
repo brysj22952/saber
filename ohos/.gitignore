@@ -1,0 +1,25 @@
+/node_modules
+/oh_modules
+/local.properties
+/.idea
+**/build
+/.hvigor
+.cxx
+/.clangd
+/.clang-format
+/.clang-tidy
+**/.test
+**/BuildProfile.ets
+**/oh-package-lock.json5
+/package.json
+/package-lock.json
+
+**/src/main/resources/rawfile/flutter_assets/
+**/libs/**/libapp.so
+**/libs/**/libflutter.so
+**/libs/**/libvmservice_snapshot.so
+
+# 签名材料:密钥库(.p12)、证书(.cer/.pem)、Profile(.p7b)、material/ 密钥材料。
+# 这些是「你的」签名身份,绝不能进版本库 —— 泄露等于任何人都能冒充你的应用签名。
+# 需要签名时按 docs/ohos.md §4 生成即可。
+/signing/

@@ -1,0 +1,45 @@
+# OpenHarmony(鸿蒙 / HarmonyOS NEXT)适配用的依赖覆盖。
+#
+# 这个文件放在 toolchain/ohos/ 下,**不**直接放在仓库根目录。
+#
+# 原因:pub 会自动读取仓库根目录的 `pubspec_overrides.yaml` 并覆盖同名依赖。
+# 如果把它提交在根目录,上游 CI(以及任何克隆了本仓库的人)在跑
+# `flutter pub get` 时都会被迫拉取下面这些 gitcode 上的鸿蒙分支插件 ——
+# 那会让与鸿蒙无关的 Android / Linux / Windows 构建也依赖 gitcode,
+# 慢、不稳,甚至直接失败。
+#
+# 所以:`scripts/build_ohos.sh` 会在构建前把这个文件复制到仓库根目录
+# (根目录那份已在 .gitignore 里,不会被提交)。
+#
+# 覆盖内容:
+#   1. OpenHarmony-TPC/flutter_packages 里带鸿蒙实现的官方插件
+#      (shared_preferences / path_provider / url_launcher ...);
+#   2. stow_secure —— 本仓库 packages/stow_secure 下的鸿蒙实现
+#      (上游依赖 flutter_secure_storage,该插件至今没有鸿蒙实现)。
+#
+# 用法: bash scripts/build_ohos.sh  —— 脚本会自动就位,业务代码无需任何改动。
+
+dependency_overrides:
+  # --- 带鸿蒙实现的官方插件 -----------------------------------------------
+  shared_preferences:
+    git:
+      url: https://gitcode.com/openharmony-tpc/flutter_packages.git
+      path: packages/shared_preferences/shared_preferences
+      ref: master
+
+  path_provider:
+    git:
+      url: https://gitcode.com/openharmony-tpc/flutter_packages.git
+      path: packages/path_provider/path_provider
+      ref: master
+
+  url_launcher:
+    git:
+      url: https://gitcode.com/openharmony-tpc/flutter_packages.git
+      path: packages/url_launcher/url_launcher
+      ref: master
+
+  # --- 鸿蒙专用替身 -------------------------------------------------------
+  # flutter_secure_storage 暂无鸿蒙实现,改用基于 shared_preferences 的实现。
+  stow_secure:
+    path: packages/stow_secure
