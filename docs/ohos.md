@@ -15,6 +15,7 @@ Saber 的业务源码(`lib/`、`pubspec.yaml`)一个字节都没改,
 | [`scripts/build_ohos.sh`](../scripts/build_ohos.sh) | 一键构建脚本 |
 | [`toolchain/ohos/`](../toolchain/ohos/) | 主机侧工具链:SDK 修补、AOT 打通、签名、设备安装 |
 | [`docs/ohos.md`](ohos.md) | 本文档 |
+| [`docs/ohos-upstream.md`](ohos-upstream.md) | 怎么把这套东西合并回上游(拆分策略 + 操作手册) |
 
 > **工具链也放进仓库了。**
 > SDK 声明树同步、API 回补、AOT 补丁、签名材料生成、装设备 ——
