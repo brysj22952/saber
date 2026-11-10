@@ -257,6 +257,44 @@ since it doesn't match 'TargetPlatform.ohos'.
 | `super_native_extensions` | build hook 用 Rust 交叉编译,依赖 glib/gobject,鸿蒙没有对应产物 | 跳过 hook |
 | `pdfium_dart` | build hook 从 GitHub 下载预编译 pdfium(只有 android/linux/macos/windows) | 跳过 hook |
 
+### 2.5 为什么「自定义数据目录」在鸿蒙上做不了
+
+上游的「自定义 Saber 文件夹」(`SettingsDirectorySelector`)在 Android 上是能用的,
+因为它走的是 SAF(Storage Access Framework),**并且显式申请了持久化授权**:
+
+```dart
+androidOptions: defaultTargetPlatform == .android
+    ? const FilePickerAndroidOptions(
+        safOptions: .new(
+          grant: .lifetime,          // 授权一直有效
+          accessMode: .readWrite,
+          persistGrant: true,        // 重启之后还能用
+        ),
+      )
+    : const .new(),
+```
+
+鸿蒙的 `DocumentViewPicker` **没有对应的东西**:`@ohos.file.fs` 和
+`@ohos.file.picker` 里都没有任何「持久化 URI 授权」的接口
+(没有 `persistPermission` / `grantUriPermission` 之类)。系统选择器给的
+授权只在**本次会话**内有效。
+
+实测(MatePad Edge / HarmonyOS 7.0.0):
+
+1. 设置里选一个外部目录 → 应用把笔记**搬**过去了 → 当次会话一切正常;
+2. 杀掉应用再启动 → 应用再也读不到那个目录 → 每一篇笔记都变成
+   `PathAccessException: Cannot open file, path = '/storage/Users/currentUser/...'`;
+3. 连设置里的那个入口都点不开了(`Directory.existsSync()` 自己就会抛异常)。
+
+所以鸿蒙端**不显示**这个入口 —— 搬出去就再也搬不回来了。
+
+另外加了一层兜底:`FileManager._recoverFromUnreachableCustomDataDir()` 在启动时
+检查自定义目录还读不读得到,读不到就记一条 warning 并回退到默认(沙箱)目录,
+免得整个应用因为一个失效的目录变成一片 `PathAccessException`。
+
+> 想要「把笔记放到某个文件夹里」这种效果,可行的做法是**导出**(把笔记
+> **复制**一份到用户选的目录),因为复制只需要当次会话的授权。
+
 ---
 
 ## 3. 签名(HAP 最容易踩坑的一环)
@@ -677,7 +715,7 @@ hdc shell aa start -a EntryAbility -b com.sabernotes.saber
 | 后台同步(WorkManager) | ❌ 无鸿蒙实现,同步只在应用前台进行 |
 | Android 手写笔(OnyxSDK) | ❌ 本来就只支持 Android,鸿蒙端自动跳过 |
 | 分享到其它应用 | ❌ `share_plus` 无鸿蒙实现;鸿蒙端统一走「另存为」 |
-| 自定义数据目录 | ❌ 上游只在 `Platform.isAndroid` 下提供该设置项,鸿蒙端不显示 |
+| 自定义数据目录 | ❌ 鸿蒙的系统选择器没有「持久化授权」,把笔记搬到外部目录后**重启就读不到了**,所以入口保持隐藏(详见 §2.5) |
 | Sentry 崩溃上报 | ⚠️ 仅在用户主动同意后启用,鸿蒙端需另配 native SDK |
 | `printing`(PDF 光栅化) | ⚠️ 插件无鸿蒙实现,启动时会被忽略;因此 `Editor.canRasterPdf == false`,只影响「导入 PDF」,不影响「导出 PDF」 |
 

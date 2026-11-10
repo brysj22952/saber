@@ -548,6 +548,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 SettingsSubtitle(subtitle: t.settings.prefCategories.advanced),
                 if (isSentryAvailable) const SettingsSentryConsent(),
+                // 鸿蒙上不显示:系统选择器给的目录授权只在本次会话内有效
+                // (见 FileManager._recoverFromUnreachableCustomDataDir),
+                // 把笔记搬出去就再也搬不回来了。
                 if (Platform.isAndroid)
                   SettingsDirectorySelector(
                     title: t.settings.prefLabels.customDataDir,
