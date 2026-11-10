@@ -710,11 +710,11 @@ hdc shell aa start -a EntryAbility -b com.sabernotes.saber
 | 导入笔记(`.sba`)、插入照片 | ✅ 可用(`packages/file_picker_ohos`) |
 | 导出 SBA / PDF / PNG | ✅ 可用(另存为对话框;PDF 由纯 Dart 的 `pdf` 包生成) |
 | 保存图片到系统相册 | ✅ 可用(`saver_gallery` 有鸿蒙实现) |
-| PDF 预览 / 导入 PDF | ❌ 不支持(缺鸿蒙版 pdfium),入口按 `Editor.canRasterPdf` 自动隐藏 |
+| PDF 预览 / 导入 PDF | ❌ 不支持(缺鸿蒙版 pdfium),入口按 `Editor.canRasterPdf` 自动隐藏 —— 按钮根本不渲染 |
 | Nextcloud 同步 | ✅ 可用(登录时用 `url_launcher` 跳到浏览器完成授权) |
-| 后台同步(WorkManager) | ❌ 无鸿蒙实现,同步只在应用前台进行 |
+| 后台同步(WorkManager) | ❌ 无鸿蒙实现,同步只在应用前台进行;`setupBackgroundSync()` 只在 Android/iOS 注册,鸿蒙上界面上也没有这个开关 |
 | Android 手写笔(OnyxSDK) | ❌ 本来就只支持 Android,鸿蒙端自动跳过 |
-| 分享到其它应用 | ❌ `share_plus` 无鸿蒙实现;鸿蒙端统一走「另存为」 |
+| 分享到其它应用 | ❌ `share_plus` 无鸿蒙实现;鸿蒙端统一走「另存为」,导出栏只有 SBA / PDF / PNG 三项,没有「分享」这一项 |
 | 自定义数据目录 | ❌ 鸿蒙的系统选择器没有「持久化授权」,把笔记搬到外部目录后**重启就读不到了**,所以入口保持隐藏(详见 §2.5) |
 | Sentry 崩溃上报 | ⚠️ 仅在用户主动同意后启用,鸿蒙端需另配 native SDK |
 | `printing`(PDF 光栅化) | ⚠️ 插件无鸿蒙实现,启动时会被忽略;因此 `Editor.canRasterPdf == false`,只影响「导入 PDF」,不影响「导出 PDF」 |
