@@ -7,11 +7,14 @@
 #
 # 需要修的三个点:
 #
-#  1. flutter_quill / flex_color_picker
-#     Flutter-OH 给 TargetPlatform 增加了 `ohos` 成员,这两个包里对
-#     TargetPlatform 的 switch 是穷尽的,不加分支会直接编译失败:
+#  1. 穷尽的 switch (defaultTargetPlatform)
+#     Flutter-OH 给 TargetPlatform 增加了 `ohos` 成员。Flutter 3.32 之后
+#     cupertino / material 被拆成 cupertino_ui / material_ui 两个 pub 包,
+#     它们以及 flutter_quill / super_clipboard / background_downloader
+#     内部对 TargetPlatform 的 switch 是穷尽的,不加分支会直接编译失败:
 #       "The type 'TargetPlatform' is not exhaustively matched by the switch
 #        cases since it doesn't match 'TargetPlatform.ohos'."
+#     由 patch_target_platform_ohos.py 统一扫描 pub cache 处理。
 #
 #  2. super_native_extensions
 #     它的 build hook 会调用 Rust 工具链交叉编译原生扩展(还依赖 glib/gobject),
@@ -37,46 +40,11 @@ patched=0
 skipped=0
 
 # --- 1) TargetPlatform.ohos 穷尽性 ------------------------------------------
-# 给 switch 增加 `case TargetPlatform.ohos:`,插在 android/iOS/fuchsia 之后。
-add_ohos_case() {
-  local file="$1"
-  local anchor="$2"   # 例如 "case TargetPlatform.fuchsia:"
-  if [ ! -f "$file" ]; then
-    echo "  [skip] $file 不存在"
-    skipped=$((skipped + 1))
-    return
-  fi
-  python3 - "$file" "$anchor" <<'PY'
-import sys, pathlib, re
-path = pathlib.Path(sys.argv[1])
-anchor = sys.argv[2]
-s = path.read_text(encoding='utf-8')
-indent = anchor[:len(anchor) - len(anchor.lstrip())]
-needle = anchor + '\n'
-ohos = f'{indent}case TargetPlatform.ohos:\n'
-# 只在「后面还没有 ohos 分支」的位置插入,保证脚本可重复执行
-pattern = re.escape(needle) + r'(?![ \t]*case TargetPlatform\.ohos:)'
-s, count = re.subn(pattern, lambda m: m.group(0) + ohos, s)
-if count == 0:
-    if ohos in s:
-        print(f'    {path.name}: 已打过补丁,跳过')
-    else:
-        raise SystemExit(f'{path}: 找不到锚点 {anchor!r}')
-else:
-    path.write_text(s, encoding='utf-8')
-    print(f'    {path.name}: 新增 {count} 处')
-PY
-  echo "  [ok] $(basename "$file"): 已加入 case TargetPlatform.ohos"
-  patched=$((patched + 1))
-}
-
+# 给所有对 defaultTargetPlatform 做穷尽 switch 的依赖包补上 ohos 分支。
+# 见 patch_target_platform_ohos.py 的说明。
 echo "==> 1/3 修补 TargetPlatform.ohos 穷尽性"
-for f in "${PUB_CACHE}"/hosted/*/flutter_quill-*/lib/src/editor/raw_editor/raw_editor_state.dart; do
-  add_ohos_case "$f" "      case TargetPlatform.fuchsia:"
-done
-for f in "${PUB_CACHE}"/hosted/*/flex_color_picker-*/lib/src/functions/picker_functions.dart; do
-  add_ohos_case "$f" "    case TargetPlatform.fuchsia:"
-done
+python3 "$(dirname "$0")/patch_target_platform_ohos.py" --cache "$PUB_CACHE"
+patched=$((patched + 1))
 
 # --- 2) super_native_extensions:跳过 Rust 交叉编译 --------------------------
 echo "==> 2/3 跳过 super_native_extensions 的 Rust 原生扩展构建"

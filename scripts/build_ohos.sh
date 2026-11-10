@@ -49,10 +49,7 @@ if ! command -v flutter > /dev/null 2>&1; then
   exit 1
 fi
 
-echo "==> 1/5 应用第三方依赖补丁(patches/ohos)"
-bash "$REPO_ROOT/patches/ohos/apply_ohos_patches.sh"
-
-echo "==> 2/5 解析依赖"
+echo "==> 1/5 解析依赖"
 # 依赖覆盖文件放在 toolchain/ohos/ 下,这里复制到仓库根目录 ——
 # pub 只会读根目录的 pubspec_overrides.yaml。
 # 不这么做的话,与鸿蒙无关的构建也会被强制拉取 gitcode 上的鸿蒙分支插件。
@@ -77,6 +74,12 @@ if ! flutter pub get 2>&1 | tee /tmp/saber_pubget.log; then
     exit 1
   fi
 fi
+
+echo "==> 2/5 应用第三方依赖补丁(patches/ohos)"
+# 必须放在 `flutter pub get` **之后**:pub get 会重新解压/替换 pub cache 里的
+# 包目录,补丁写在 cache 里的源码会被原样覆盖掉。顺序反了就会出现
+# "TargetPlatform is not exhaustively matched ... 'TargetPlatform.ohos'"。
+bash "$REPO_ROOT/patches/ohos/apply_ohos_patches.sh"
 
 echo "==> 3/5 准备签名材料 + 写入 build-profile.json5"
 # 仓库里提交的是「模板」:storePassword / keyPassword 是空串,

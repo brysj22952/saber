@@ -200,6 +200,42 @@ dependency_overrides:
 | `path_provider` | 应用数据目录 |
 | `url_launcher` | 打开链接 |
 
+上游没有鸿蒙实现、由本仓库自己补写的插件(都走 Flutter 的
+**federated plugin** 机制,即 `implements: <上游包名>`,只声明
+`platforms.ohos`,因此对 Android / Linux / Windows / macOS 零影响):
+
+| 包 | 替代的上游插件 | 用途 |
+|---|---|---|
+| [`packages/stow_secure/`](../packages/stow_secure/) | `flutter_secure_storage` | Nextcloud 凭据存储(基于 `shared_preferences`) |
+| [`packages/file_picker_ohos/`](../packages/file_picker_ohos/) | `file_picker` | 导入笔记 / 插入照片 / 导出另存为 / 选择文件夹 |
+
+> ⚠️ **`file_picker_ohos` 必须写进 `pubspec.yaml` 的 `dependencies`,
+> 不能只写在 `dependency_overrides` 里。**
+> `flutter_tools` 生成插件注册器时只从「应用声明的依赖」出发遍历依赖图,
+> 只出现在 overrides 里的包不会被识别为插件 —— 表现为插件的 ArkTS 代码和
+> Dart 侧都没有被注册,运行时 `MissingPluginException`。
+
+#### `file_picker_ohos` 的实现要点
+
+| 方法 | 鸿蒙侧实现 |
+|---|---|
+| `pickFiles` / `pickFile` | `DocumentViewPicker.select()`(图片/视频走 `PhotoViewPicker`,音频走 `AudioViewPicker`) |
+| `getDirectoryPath` | `DocumentViewPicker.select()`,并设 `DocumentSelectMode.FOLDER` |
+| `saveFile` | 先把字节写进沙箱缓存 → `DocumentViewPicker.save()` → 再把缓存文件拷到用户选的位置 |
+| `clearTemporaryFiles` | 清掉 `<cacheDir>/file_picker/` |
+
+选中的文件会被**复制进应用沙箱**(`<cacheDir>/file_picker/`)再把真实路径交给
+Dart —— 系统选择器给的是 `file://docs/...` 这类 URI,`dart:io` 的 `File` 用不了。
+
+两个已经踩过的坑:
+
+- **URI 里的中文是百分号编码的**。直接取 basename 会得到
+  `%E6%B5%8B%E8%AF%95.sba` 这样的文件名,Dart 侧看到的就是乱码 ——
+  必须 `decodeURIComponent`。
+- **`fileSuffixFilters` 不合法会让 `select()` 直接抛错**,选择器根本弹不出来。
+  所以实现里按「带点后缀 → 不带点后缀 → 完全不过滤」依次降级,
+  保证最差情况下也能弹出选择器。
+
 ### 2.3 `TargetPlatform.ohos`
 
 Flutter-OH 给 `TargetPlatform` 增加了 `ohos` 成员,一些第三方包里的
@@ -633,13 +669,17 @@ hdc shell aa start -a EntryAbility -b com.sabernotes.saber
 | 功能 | 状态 |
 |---|---|
 | 笔记的增删改查、画板、缩略图 | ✅ 可用 |
-| PDF 预览 / 导入图片 | ❌ 不支持(缺鸿蒙版 pdfium) |
-| Nextcloud 同步 | ⚠️ 依赖 `url_launcher`/`http`,同步本身可用,但登录页跳转需要真机验证 |
+| 导入笔记(`.sba`)、插入照片 | ✅ 可用(`packages/file_picker_ohos`) |
+| 导出 SBA / PDF / PNG | ✅ 可用(另存为对话框;PDF 由纯 Dart 的 `pdf` 包生成) |
+| 保存图片到系统相册 | ✅ 可用(`saver_gallery` 有鸿蒙实现) |
+| PDF 预览 / 导入 PDF | ❌ 不支持(缺鸿蒙版 pdfium),入口按 `Editor.canRasterPdf` 自动隐藏 |
+| Nextcloud 同步 | ✅ 可用(登录时用 `url_launcher` 跳到浏览器完成授权) |
 | 后台同步(WorkManager) | ❌ 无鸿蒙实现,同步只在应用前台进行 |
 | Android 手写笔(OnyxSDK) | ❌ 本来就只支持 Android,鸿蒙端自动跳过 |
-| 分享、导出、系统相册 | ❌ 对应插件暂无鸿蒙实现 |
+| 分享到其它应用 | ❌ `share_plus` 无鸿蒙实现;鸿蒙端统一走「另存为」 |
+| 自定义数据目录 | ❌ 上游只在 `Platform.isAndroid` 下提供该设置项,鸿蒙端不显示 |
 | Sentry 崩溃上报 | ⚠️ 仅在用户主动同意后启用,鸿蒙端需另配 native SDK |
-| `printing`(导出 PDF) | ⚠️ 插件无鸿蒙实现,启动时会被忽略(不影响启动) |
+| `printing`(PDF 光栅化) | ⚠️ 插件无鸿蒙实现,启动时会被忽略;因此 `Editor.canRasterPdf == false`,只影响「导入 PDF」,不影响「导出 PDF」 |
 
 ---
 

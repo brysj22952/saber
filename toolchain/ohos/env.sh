@@ -42,9 +42,22 @@ export OHOS_NDK_HOME="$OHOS_API_DIR/native"
 export PATH="$OHOS_API_DIR/native/llvm/bin:$OHOS_API_DIR/toolchains:$PATH"
 
 # --- Flutter 配置 ---------------------------------------------------------
-# 官方源在国内访问不稳定,默认走镜像;有直连条件可以 unset 这两个。
+# Flutter 引擎产物(artifacts)走国内镜像。
 export FLUTTER_STORAGE_BASE_URL="${FLUTTER_STORAGE_BASE_URL:-https://storage.flutter-io.cn}"
-export PUB_HOSTED_URL="${PUB_HOSTED_URL:-https://pub.flutter-io.cn}"
+
+# pub 包走 pub.dev 官方源,**不要**改成 pub.flutter-io.cn。
+#
+# 原因:镜像的 API 元数据里 archive_url 指向
+#   storage.flutter-io.cn/dartlang-pub-public-packages/packages/<pkg>.tar.gz
+# 而当前 pub 客户端不认 archive_url、自己按上面那个模板拼地址;那个路径现在
+# 对所有包都返回一个几百字节的错误页,于是 pub 会报
+#   "Downloaded archive for <pkg> had wrong content-hash"
+# 直接解析失败。走 pub.dev 则一切正常(实测 0.2s 内返回)。
+#
+# 另外,仓库里的 pubspec.lock 记的就是 pub.dev 的 URL,保持一致才能复用锁文件、
+# 避免每次构建都重新解析升级一整棵依赖树(那会连带把 patches/ohos 里针对
+# 特定版本做的补丁全部作废)。
+export PUB_HOSTED_URL="${PUB_HOSTED_URL:-https://pub.dev}"
 export FLUTTER_SUPPRESS_ANALYTICS=true
 export LANG=C.UTF-8
 
