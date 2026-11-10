@@ -711,7 +711,7 @@ hdc shell aa start -a EntryAbility -b com.sabernotes.saber
 | 导出 SBA / PDF / PNG | ✅ 可用(另存为对话框;PDF 由纯 Dart 的 `pdf` 包生成) |
 | 保存图片到系统相册 | ✅ 可用(`saver_gallery` 有鸿蒙实现) |
 | PDF 预览 / 导入 PDF | ❌ 不支持(缺鸿蒙版 pdfium),入口按 `Editor.canRasterPdf` 自动隐藏 —— 按钮根本不渲染 |
-| Nextcloud 同步 | ✅ 可用(登录时用 `url_launcher` 跳到浏览器完成授权) |
+| Nextcloud 同步 | ⚠️ 登录会跳**系统浏览器**(`url_launcher` 鸿蒙版默认走「应用内嵌 WebView」,已打补丁改成走系统浏览器,见 `patches/ohos/`);登录之后的应用内同步走 WebDAV,可用。**没有真实的 Nextcloud 服务器时无法端到端验证** |
 | 后台同步(WorkManager) | ❌ 无鸿蒙实现,同步只在应用前台进行;`setupBackgroundSync()` 只在 Android/iOS 注册,鸿蒙上界面上也没有这个开关 |
 | Android 手写笔(OnyxSDK) | ❌ 本来就只支持 Android,鸿蒙端自动跳过 |
 | 分享到其它应用 | ❌ `share_plus` 无鸿蒙实现;鸿蒙端统一走「另存为」,导出栏只有 SBA / PDF / PNG 三项,没有「分享」这一项 |

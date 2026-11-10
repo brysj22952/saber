@@ -181,4 +181,52 @@ PYEOF
   patched=$((patched + 1))
 done
 
+# --- 5) url_launcher_ohos:没有内嵌浏览器页面时退回系统浏览器 --------------
+# url_launcher 的鸿蒙实现对 http/https 链接默认走「应用内嵌 WebView」
+# (openUrlInWebView),而原生侧要求宿主应用在 launchUrl 的 headers 里带上
+# harmony_browser_page,并且真的实现并注册了那个 WebView 页面,否则只会弹一个
+# 「请在 launch 函数的 headers 参数中添加 harmony_browser_page ...」的 toast,
+# 链接根本打不开。
+#
+# Saber 没有(也不打算)实现那个内嵌浏览器页面,所以这里改成:只要调用方没有
+# 显式提供 harmony_browser_page,就直接用系统浏览器打开
+# (原生侧的 launchUrl -> startAbility + entity.system.browsable)。
+#
+# 注意 url_launcher 是 git 依赖,不在 hosted/ 下,路径形如
+#   $PUB_CACHE/git/flutter_packages-<sha>/packages/url_launcher/url_launcher_ohos/
+for f in "${PUB_CACHE}"/git/*/packages/url_launcher/url_launcher_ohos/lib/url_launcher_ohos.dart; do
+  [ -f "$f" ] || continue
+  if grep -q "OHOS: 内嵌浏览器页面未注册" "$f"; then
+    echo "  [skip] url_launcher_ohos 已打过补丁"
+    skipped=$((skipped + 1))
+    continue
+  fi
+  python3 - "$f" <<'PYEOF'
+import sys
+path = sys.argv[1]
+src = open(path).read()
+
+old = """    final bool succeeded;
+    if (useWebView) {"""
+new = """    final bool succeeded;
+    // OHOS: 内嵌浏览器页面未注册时退回系统浏览器。
+    // 鸿蒙的 url_launcher 对 http/https 默认走应用内嵌 WebView,而原生侧要求
+    // 宿主应用传 harmony_browser_page 并真的实现那个页面,否则只弹一个 toast。
+    final bool hasHarmonyBrowserPage =
+        headers.containsKey('harmony_browser_page');
+    if (useWebView && !hasHarmonyBrowserPage) {
+      succeeded = await _hostApi.launchUrl(url, headers);
+    } else if (useWebView) {"""
+
+if old not in src:
+    print("SKIP: launch() 未匹配")
+    sys.exit(0)
+src = src.replace(old, new, 1)
+open(path, 'w').write(src)
+print("PATCHED")
+PYEOF
+  echo "  [ok] url_launcher_ohos 已改为默认用系统浏览器"
+  patched=$((patched + 1))
+done
+
 echo "==> 完成:修补 $patched 处,跳过 $skipped 处"
