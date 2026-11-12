@@ -40,7 +40,11 @@ Write-Host "==> 3/4 回补 API 22/24 的声明"
 Write-Host "==> 4/4 flutter_tools 补丁(容忍 Windows 符号链接权限问题)"
 & $python (Join-Path $toolchain 'windows\patch_flutter_tools_symlink.py') --flutter "$env:FLUTTER_ROOT"
 
-Write-Host "==> 5/5 AOT patches (release builds only, but they are idempotent)"
+Write-Host "==> 5/6 对齐 const_finder 快照的 SDK hash"
+& $python (Join-Path $toolchain 'windows\align_const_finder.py') --flutter "$env:FLUTTER_ROOT"
+if ($LASTEXITCODE -ne 0) { throw "const_finder alignment failed" }
+
+Write-Host "==> 6/6 AOT patches (release builds only, but they are idempotent)"
 $env:PYTHONIOENCODING = 'utf-8'
 & $python (Join-Path $toolchain 'windows\setup_ohos_aot.py') --flutter "$env:FLUTTER_ROOT"
 if ($LASTEXITCODE -ne 0) { throw "AOT patch failed" }

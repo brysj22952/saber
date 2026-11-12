@@ -126,13 +126,27 @@ powershell -ExecutionPolicy Bypass -File scripts\build_ohos.ps1 -Mode release
   框架侧的 `FLUTTER_OHOS_AOT_BUILD` 开关、插件注册表把 ohos 分支提前
   (否则 `--target-os=linux` 会让 `Platform.isLinux` 恒真,桌面 Linux 插件会顶掉鸿蒙插件)。
 
-### 3.2 `--no-tree-shake-icons`(可选)
+### 3.2 图标摇树(const_finder)的 SDK hash
 
-release 模式会跑引擎自带的 `const_finder` 扫图标常量,它校验 kernel 的 SDK hash,
-在 Windows 上与本机的 SDK 不匹配 → `ConstFinder failure: Can't load Kernel binary: Invalid SDK hash.`
+release 模式会跑引擎自带的 `const_finder` 扫图标常量。它是一个 **JIT 快照**,
+由**引擎工件对应的那个 Dart SDK** 构建(原版 Dart 3.13.7,revision `416e33b0ff`),
+并且里面编进了 `package:kernel` 用来核对 kernel 的 SDK hash。
 
-加 `--no-tree-shake-icons` 可跳过(图标字形不裁剪,包体多约 34 MB,功能不受影响)。
-彻底解法见规划文档 §11.2。
+而 Windows 上的主机 Dart SDK 是 **ohos 定制版**(revision `e8c31beb6a`,Dart 3.13.3),
+两边对不上,于是报:
+
+```
+Can't load Kernel binary: Invalid SDK hash.
+```
+
+> **注意**:这条报错**说的是快照,不是 kernel** —— 是 VM 在加载 const_finder 快照时
+> 的 SDK hash 校验失败,排查时极易误判成"kernel 的 hash 不对"。
+
+**解法**:把快照里编译进去的 SDK hash 对齐成主机 SDK 的 revision 前缀
+(`toolchain/ohos/windows/align_const_finder.py`,`setup_sdk.ps1` 的第 5 步会自动跑,
+幂等)。`flutter precache` 重下引擎工件会把这个补丁冲掉,所以必须每次构建都补。
+
+对齐之后 release 包 **37.9 MB**(跳过摇树是 73.4 MB),和 Linux 那边的产物同量级。
 
 ---
 
