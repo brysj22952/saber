@@ -202,7 +202,12 @@ def main() -> int:
     roots: list[pathlib.Path] = []
     hosted = pathlib.Path(args.cache) / "hosted"
     if hosted.is_dir():
-        roots.extend(sorted(p for p in hosted.iterdir() if p.is_dir()))
+        # hosted/<host>/<pkg>-<ver>/ —— 要下探到**包**这一层。
+        # 以前只把 hosted/<host> 当成包,于是 hosted/<host>/lib 不存在,
+        # 所有 pub.dev 上的包(material_ui / cupertino_ui / ...)一个都没被补,
+        # 编译时集体报 "TargetPlatform is not exhaustively matched"。
+        for host in sorted(p for p in hosted.iterdir() if p.is_dir()):
+            roots.extend(sorted(p for p in host.iterdir() if p.is_dir()))
     git_root = pathlib.Path(args.cache) / "git"
     if git_root.is_dir():
         roots.extend(sorted(p for p in git_root.iterdir() if p.is_dir()))
