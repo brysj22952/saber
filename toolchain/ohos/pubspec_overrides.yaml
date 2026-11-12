@@ -51,6 +51,20 @@ dependency_overrides:
       url: https://github.com/adil192/flutter-quill.git
       ref: ref!/migrate-to-standalone-material_ui
 
+  # --- 上游 pubspec.yaml 里另外两条,必须一并抄过来 -------------------------
+  # (目录级 pubspec_overrides.yaml 是**整体替换** dependency_overrides 段,
+  #  漏抄的条目会静默回到 pub.dev 的正式版本。)
+  #
+  # https://github.com/darioielardi/flutter_speed_dial/pull/344
+  #   Note: flutter_speed_dial hasn't been updated in 3 years, maybe replace it.
+  flutter_speed_dial:
+    git:
+      url: https://github.com/adil192/flutter_speed_dial.git
+      ref: fix/remove-Future.delayed
+
+  # https://github.com/GregoryConrad/native_toolchain_rust/issues/103
+  native_toolchain_rust: 1.0.4+0
+
   # --- 带鸿蒙实现的官方插件 -----------------------------------------------
   shared_preferences:
     git:

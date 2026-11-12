@@ -13,6 +13,7 @@ REM ---------------------------------------------------------------------------
 
 set "HERE=%~dp0"
 set "HAP=%HERE%entry-default-signed.hap"
+if not exist "%HAP%" if exist "%SABER_REPO_ROOT%\build\ohos\hap\entry-default-signed.hap" set "HAP=%SABER_REPO_ROOT%\build\ohos\hap\entry-default-signed.hap"
 set "BUNDLE=com.sabernotes.saber"
 set "ABILITY=EntryAbility"
 set "START=1"
@@ -35,7 +36,12 @@ if %errorlevel%==0 (
 )
 
 REM DevEco Studio / 命令行工具的常见安装位置
+REM 另外:本机的工作区布局是 <workspace>\deveco-tools\command-line-tools\sdk\default\openharmony\toolchains
+REM (环境变量 SABER_OHOS_ROOT 指向工作区根)
 for %%D in (
+  "%SABER_OHOS_ROOT%\deveco-tools\command-line-tools\sdk\default\openharmony\toolchains"
+  "%SABER_OHOS_ROOT%\deveco-tools\command-line-tools\sdk\default\hms\toolchains"
+  "%SABER_OHOS_ROOT%\ohos-sdk-root\ohos-sdk\18\toolchains"
   "%LOCALAPPDATA%\Huawei\Sdk"
   "%USERPROFILE%\AppData\Local\Huawei\Sdk"
   "C:\Program Files\Huawei\DevEco Studio\sdk"
