@@ -70,12 +70,31 @@ harmony/
 └── toolchain/                   ← 主机侧工具链(SDK 修补、AOT、签名、装机)
     ├── common.sh                公共路径解析(所有脚本都 source 它)
     ├── env.sh / env.ps1         环境变量
-    ├── prepare_signing.sh       签名材料准备
-    ├── setup_ohos_aot.sh        AOT 打通
+    │
+    │   ── 跨平台的实现(两个平台共用同一份,bash 只是薄封装)────────────
+    ├── apply_ohos_patches.py    给 pub cache 里的依赖打鸿蒙补丁
+    ├── setup_ohos_aot.py        AOT 的三处源码补丁
+    ├── prepare_signing.py       签名材料准备
+    │
+    │   ── Linux 专属 ─────────────────────────────────────────────────
+    ├── setup_ohos_aot.sh        AOT 打通(装 Wine + 下载 gen_snapshot + 上面的补丁)
+    ├── prepare_signing.sh       → prepare_signing.py 的薄封装
+    ├── use_agc_signing.sh       → prepare_signing.py 的薄封装(带 AGC 材料时用)
     ├── install_on_device.sh     装到平板
     ├── dist/                    给终端用户的安装脚本
-    └── windows/                 Windows 版的等价实现
+    │
+    │   ── Windows 专属 ───────────────────────────────────────────────
+    └── windows/
+        ├── setup_sdk.ps1             把 SDK 侧的准备串成一步(幂等)
+        ├── patch_flutter_tools_symlink.py  没开发者模式时容忍符号链接失败
+        └── align_const_finder.py    对齐 const_finder 快照的 SDK hash
 ```
+
+> **为什么要分「跨平台 / Linux 专属 / Windows 专属」三层?**
+> 以前同一套逻辑有两份实现:bash 一份(Linux)、Python 一份(Windows)。
+> 两份已经漂移过 —— bash 版 `setup_ohos_aot.sh` 的补丁锚点对不上现在的
+> flutter_tools 源码,只是因为早被 Python 版打过才没暴露。
+> 现在**逻辑只有一份**(Python),bash 只剩薄封装,不可能再漂移。
 
 仓库里还有**一个**目录留在外面:`ohos/`(鸿蒙工程骨架)。
 这是 Flutter-OH 的硬性要求 —— `flutter_tools` 里写死了工程根目录:
@@ -196,8 +215,8 @@ powershell -File harmony\scripts\build_ohos.ps1 -Mode debug
 
 Windows 侧第 0 步之前还会跑一次 `harmony/toolchain/windows/setup_sdk.ps1`,
 把 SDK 侧的修补(引擎 HAR 的 API 版本、API 22/24 声明回补、`const_finder` 快照的
-SDK hash 对齐)集中做完 —— 幂等,每次构建都跑,因为 `flutter precache` 会重新下载
-引擎工件,把那些补丁冲掉。
+SDK hash 对齐、AOT 补丁)集中做完 —— 幂等,每次构建都跑,因为 `flutter precache`
+会重新下载引擎工件,把那些补丁冲掉。
 
 ---
 

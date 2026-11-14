@@ -3,14 +3,23 @@
 
 Finds accent-coloured blobs in the PNG and reports how many distinct
 numbered badges exist and where their centres are.
+
+Usage:
+    python harmony/docs/manual/tools/verify_annotations.py [glob]
+    # 默认校验 harmony/docs/manual/img/*.png
 """
 import glob
 import os
+import pathlib
 import sys
 
 from PIL import Image
 
 ACCENT = (255, 196, 0)
+
+# <repo>/harmony/docs/manual/tools/ -> up 4 = <repo>
+REPO = pathlib.Path(__file__).resolve().parents[4]
+DEFAULT_GLOB = str(REPO / "harmony" / "docs" / "manual" / "img" / "*.png")
 
 
 def is_accent(p):
@@ -19,7 +28,11 @@ def is_accent(p):
 
 def main():
     paths = sorted(glob.glob(sys.argv[1] if len(sys.argv) > 1
-                             else "manual/img/*.png"))
+                             else DEFAULT_GLOB))
+    if not paths:
+        print(f"没有找到标注图:{sys.argv[1] if len(sys.argv) > 1 else DEFAULT_GLOB}",
+              file=sys.stderr)
+        return 1
     for path in paths:
         im = Image.open(path).convert("RGB")
         W, H = im.size

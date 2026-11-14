@@ -121,7 +121,8 @@ Python / JS 脚本读同名环境变量。
 
 | 脚本 | 作用 |
 |---|---|
-| `setup_ohos_aot.sh` | **在 Linux 主机上打通 release(AOT)构建** —— 见 [§4.9](../docs/ohos.md#49-linux-主机上的-releaseaot构建--已打通) |
+| `setup_ohos_aot.py` | **AOT 的三处源码补丁**(跨平台共用)—— `--target-os` 白名单、框架的平台判定、插件注册表顺序 |
+| `setup_ohos_aot.sh` | **在 Linux 主机上打通 release(AOT)构建**:装 Wine + 下载 Windows 版 gen_snapshot,源码补丁交给上面那个 —— 见 [§4.9](../docs/ohos.md#49-linux-主机上的-releaseaot构建--已打通) |
 | `patch_ohos_aot_platform.py` | AOT 下强制把 `defaultTargetPlatform` 判为 `ohos`(否则 `Platform.isLinux` 恒为 true,白屏) |
 | `patch_frontend_server.py` | 把 `frontend_server` 改成「只做 kernel 编译」的精简版 |
 | `patch_dart_sdk_ohos.py` | 给 `dart:ffi` 补上 `Abi.ohosArm` / `Abi.ohosArm64` / `Abi.ohosX64` |
@@ -133,18 +134,38 @@ Python / JS 脚本读同名环境变量。
 
 | 脚本 | 作用 |
 |---|---|
-| `prepare_signing.sh` | **入口**:按 `ohos/signing/` 里已有的材料自动选一条路,并写好 `build-profile.json5` |
+| `prepare_signing.py` | **入口**:按 `ohos/signing/` 里已有的材料自动选一条路,并写好 `build-profile.json5`(跨平台共用) |
+| `prepare_signing.sh` | → 上面那个的薄封装 |
 | `gen_csr.sh` | 生成密钥对(`.p12`)+ 证书签名请求(`.csr`) |
 | `make_signing_profile.py` | 本地生成 provisioning profile(社区调试证书用) |
 | `make_debug_profile.py` | 生成带设备 UDID 白名单的调试 profile |
 | `complete_cert_chain.py` | 把单张叶子证书补成完整证书链(签名工具要求是「链」) |
-| `use_agc_signing.sh` | 切换到 AGC(华为账号)签发的材料,并校验证书与 profile 是否配套 |
+| `use_agc_signing.sh` | 切换到 AGC(华为账号)签发的材料 → `prepare_signing.py --password … --alias …` 的薄封装 |
 | `apply_signing_config.py` | 把签名配置写进 `ohos/build-profile.json5`(上面两条路径共用) |
 | `encrypt_signing_password.js` | 把明文密码加密成 hvigor 要的 hex 串 |
 | `decrypt_default_store_pass.js` | 上面那个的逆运算,用于解开 SDK 默认密码 |
 | `install_agc_cli.sh` | 安装 `@byterm/agc-cli` |
 | `agc_provision.sh` | 用 agc-cli 自动申请证书与 profile |
 | `agc_error.py` | 把 agc CLI 的 JSON 错误翻译成可读的中文提示 |
+
+### 依赖补丁
+
+| 脚本 | 作用 |
+|---|---|
+| `apply_ohos_patches.py` | 给 pub cache 里的第三方依赖打鸿蒙补丁(跨平台共用,五个补丁) |
+| `../patches/ohos/apply_ohos_patches.sh` | → 上面那个的薄封装 |
+| `../patches/ohos/patch_target_platform_ohos.py` | 给穷尽的 `TargetPlatform` switch 补 `ohos` 分支 |
+
+### Windows 专属
+
+Linux 那边的等价实现在 `windows/` 里没有对应物 —— 它们解决的是
+Windows 特有的问题。
+
+| 脚本 | 作用 |
+|---|---|
+| `windows/setup_sdk.ps1` | 把 SDK 侧的准备串成一步(幂等):引擎 HAR 的 API 版本、API 22/24 声明回补、符号链接容忍、`const_finder` 对齐、AOT 补丁 |
+| `windows/patch_flutter_tools_symlink.py` | 没开开发者模式时,让 flutter 容忍创建插件符号链接失败(1314) |
+| `windows/align_const_finder.py` | 把 `const_finder` 快照里的 SDK hash 对齐成主机 Dart SDK 的 revision(release 的图标摇树要用) |
 
 ### 设备
 

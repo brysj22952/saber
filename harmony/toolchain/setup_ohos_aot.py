@@ -1,35 +1,28 @@
 #!/usr/bin/env python3
-"""Windows port of the AOT patches (setup_ohos_aot.sh steps 4/5/6).
+"""给 release(AOT)构建打的三处源码补丁。
 
-The Linux script does six things; the first three are Linux/Wine specific
-(install Wine, fetch the Windows gen_snapshot, wrap it in a shell script).
-On Windows those are not needed:
+平台无关的一半。Linux 侧还需要额外做两件事(装 Wine、下载 Windows 版
+gen_snapshot),那部分在 harmony/toolchain/setup_ohos_aot.sh 里;Windows 上
+AOT 快照器是原生 exe,由 SDK 自己按 bin/internal/dart-sdk-url.ohos 的覆盖
+机制拉取(kernel 138,与本分支的 Dart 3.13.3 匹配)。
 
-  * the AOT snapshotter is a native Windows exe (no Wine);
-  * it is fetched automatically through the SDK's own artifact override
-    mechanism (bin/internal/dart-sdk-url.ohos -> the atomgit 3.47.4 Windows
-    host bundle, kernel 138, matching this branch's Dart 3.13.3).
-
-So only the three source patches remain:
+三处补丁:
 
   1. flutter_tools/build_system/targets/common.dart
-     frontend_server's --target-os whitelist has no 'ohos' in the stock
-     frontend_server, and the ohos ABI mapping is missing too
-     ("AbiSpecificInteger 'Int32' is missing mapping for 'ohos_arm64'").
-     Pass 'linux' instead -- semantically correct, the OpenHarmony Dart
-     runtime is Linux-based.
+     frontend_server 的 --target-os 白名单里没有 'ohos',而且缺 ohos 的 ABI
+     映射("AbiSpecificInteger 'Int32' is missing mapping for 'ohos_arm64'")。
+     改成传 'linux' —— 语义上也对,OpenHarmony 的 Dart 运行时本就是 Linux 系。
 
-  2. flutter framework: add a compile-time switch FLUTTER_OHOS_AOT_BUILD
-     (delegated to harmony/toolchain/patch_ohos_aot_platform.py, already
-     portable).
+  2. flutter framework:加一个编译期开关 FLUTTER_OHOS_AOT_BUILD
+     (委托给 harmony/toolchain/patch_ohos_aot_platform.py,那份本来就跨平台)。
+     传 'linux' 会让 Platform.isLinux 折叠成常量 true,框架与插件注册表会把
+     鸿蒙误判成桌面 Linux,这个开关强制判定为 ohos。
 
-  3. flutter_tools/flutter_plugins.dart: move the ohos branch to the front
-     of the plugin registry. With --target-os=linux, Platform.isLinux folds
-     to a constant true, so without this the desktop Linux plugins get
-     registered (path_provider_linux) and the app renders white.
+  3. flutter_tools/flutter_plugins.dart:把 ohos 分支提到插件注册表最前面。
+     同上,否则注册的是桌面 Linux 插件(path_provider_linux 等),应用白屏。
 
-Usage:
-    python harmony/toolchain/windows/setup_ohos_aot.py [--flutter <FLUTTER_ROOT>]
+用法:
+    python harmony/toolchain/setup_ohos_aot.py [--flutter <FLUTTER_ROOT>]
 """
 from __future__ import annotations
 
@@ -102,13 +95,22 @@ $_dartPluginRegisterWith
   }
 }"""
 
-FP_MARKER = "the ohos branch must come first"
+# The bash implementation of this patch (which this script replaced)
+# used a Chinese marker; accept both so an SDK that was patched by
+# either one is recognised as already patched.
+FP_MARKER = ("the ohos branch must come first", "鸿蒙分支必须放在最前面")
 
 
-def patch_file(path: pathlib.Path, pairs: list[tuple[str, str]], marker: str, label: str) -> bool:
+def patch_file(
+    path: pathlib.Path,
+    pairs: list[tuple[str, str]],
+    marker: str | tuple[str, ...],
+    label: str,
+) -> bool:
     """Apply replacements; return True when the file changed."""
     src = path.read_text(encoding="utf-8")
-    if marker in src:
+    markers = (marker,) if isinstance(marker, str) else marker
+    if any(m in src for m in markers):
         print(f"    [skip] {label}: already patched")
         return False
     out = src
@@ -148,7 +150,7 @@ def main() -> int:
     )
 
     print("==> 2/3 flutter framework: FLUTTER_OHOS_AOT_BUILD switch")
-    toolchain = pathlib.Path(__file__).resolve().parents[1]
+    toolchain = pathlib.Path(__file__).resolve().parents[0]
     patcher = toolchain / "patch_ohos_aot_platform.py"
     if patcher.is_file():
         env = dict(os.environ)

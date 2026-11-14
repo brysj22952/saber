@@ -82,11 +82,11 @@ if ($pubRc -ne 0) {
 Write-Host "    dependencies ready"
 
 Write-Host "==> 4/6 patch third-party dependencies (harmony/patches/ohos)"
-& $python (Join-Path $toolchain 'windows\apply_ohos_patches.py') --cache $env:PUB_CACHE
+& $python (Join-Path $toolchain 'apply_ohos_patches.py') --cache $env:PUB_CACHE
 if ($LASTEXITCODE -ne 0) { throw "dependency patch failed" }
 
 Write-Host "==> 5/6 prepare signing material + write build-profile.json5"
-& $python (Join-Path $toolchain 'windows\prepare_signing.py')
+& $python (Join-Path $toolchain 'prepare_signing.py')
 if ($LASTEXITCODE -ne 0) { throw "signing preparation failed" }
 
 Write-Host "==> 6/6 flutter build hap ($Mode)"

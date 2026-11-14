@@ -215,9 +215,9 @@ $env:SSH_ASKPASS = $ask; $env:SSH_ASKPASS_REQUIRE = 'force'; $env:DISPLAY = '1'
 | Linux(Seoul) | Windows(本机) |
 |---|---|
 | `harmony/toolchain/env.sh` | `harmony/toolchain/env.ps1` |
-| `harmony/toolchain/setup_ohos_aot.sh` | `harmony/toolchain/windows/setup_ohos_aot.py` |
-| `harmony/toolchain/apply_ohos_patches.sh` | `harmony/toolchain/windows/apply_ohos_patches.py` |
-| `harmony/toolchain/prepare_signing.sh` | `harmony/toolchain/windows/prepare_signing.py` |
+| (同一个 `harmony/toolchain/setup_ohos_aot.py`,两边共用) | 同左 |
+| (同一个 `harmony/toolchain/apply_ohos_patches.py`,两边共用) | 同左 |
+| (同一个 `harmony/toolchain/prepare_signing.py`,两边共用) | 同左 |
 | `harmony/scripts/build_ohos.sh` | `harmony/scripts/build_ohos.ps1` |
 | Wine 跑 `gen_snapshot.exe` | 直接跑(Windows exe) |
 | `harmony/toolchain/dist/install-harmony.sh` | `harmony/toolchain/dist/install-harmony.bat` |

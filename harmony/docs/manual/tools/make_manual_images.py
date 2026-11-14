@@ -20,8 +20,8 @@ import shlex
 import subprocess
 import sys
 
-# <repo>/harmony/docs/manual/tools/ -> up 3 = <repo>
-REPO = pathlib.Path(__file__).resolve().parents[3]
+# <repo>/harmony/docs/manual/tools/ -> up 4 = <repo>
+REPO = pathlib.Path(__file__).resolve().parents[4]
 MANUAL = REPO / "harmony" / "docs" / "manual"
 SH_SCRIPT = MANUAL / "tools" / "make_manual_images.sh"
 ANNOTATE = MANUAL / "tools" / "annotate.py"

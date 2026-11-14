@@ -25,9 +25,9 @@ def _find_hdc():
     env = os.environ.get("HDC")
     if env and os.path.isfile(env):
         return env
-    # <repo>/harmony/docs/manual/tools/ -> up 3 = <repo>; the SDK workspace
+    # <repo>/harmony/docs/manual/tools/ -> up 4 = <repo>; the SDK workspace
     # (deveco-tools/, flutter/, ...) lives one level above the repo.
-    repo = pathlib.Path(__file__).resolve().parents[3]
+    repo = pathlib.Path(__file__).resolve().parents[4]
     for base in (repo.parent, repo):
         for candidate in (
             base / "deveco-tools/command-line-tools/sdk/default/openharmony/toolchains/hdc.exe",

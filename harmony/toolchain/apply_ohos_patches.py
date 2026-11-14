@@ -1,20 +1,27 @@
 #!/usr/bin/env python3
-"""apply_ohos_patches.sh 的 Windows 版(等价实现,跨平台)。
+"""给 pub cache 里的第三方依赖打鸿蒙适配补丁。
 
-与仓库根部的 patches/ohos/apply_ohos_patches.sh 做完全相同的事:
+五个补丁,两个平台共用这一份实现:
 
-  1. 修补依赖包对 TargetPlatform 的穷尽 switch(交给 patch_target_platform_ohos.py)
-  2. super_native_extensions —— 跳过 Rust 原生扩展交叉编译
-  3. pdfium_dart —— 跳过预编译 pdfium 下载
-  4. window_manager —— 鸿蒙上没有原生实现时静默降级
-  5. url_launcher_ohos —— 没有内嵌浏览器页面时退回系统浏览器
-
-为什么要有 Windows 版:
-  原来的脚本是 bash,在 Windows 上要依赖 Git Bash 且路径处理脆弱。
-  这里用 Python 重写,Windows / Linux 都能跑,行为与 bash 版一致。
+  1. TargetPlatform 的穷尽 switch —— Flutter-OH 给 TargetPlatform 加了 `ohos`
+     成员,cupertino_ui / material_ui / flutter_quill 等包内部对它的 switch
+     是穷尽的,不加分支会直接编译失败:
+       "The type 'TargetPlatform' is not exhaustively matched by the switch
+        cases since it doesn't match 'TargetPlatform.ohos'."
+     交给 patch_target_platform_ohos.py 统一扫描 pub cache 处理。
+  2. super_native_extensions —— 它的 build hook 会调用 Rust 工具链交叉编译
+     原生扩展(还依赖 glib/gobject),鸿蒙端没有对应产物,直接跳过。
+  3. pdfium_dart —— 它的 build hook 会从 GitHub 下载预编译的 pdfium 动态库
+     (只有 android/linux/macos/windows 版本),鸿蒙端没有,直接跳过。
+     代价是鸿蒙版暂时不支持 PDF 预览/导入。
+  4. window_manager —— 桌面专用插件,鸿蒙没有原生侧。缺失时静默降级,
+     否则 main() 的 Future.wait 会中断,直接白屏。
+  5. url_launcher_ohos —— 没有内嵌浏览器页面时退回系统浏览器。
 
 用法:
-  python toolchain/ohos/windows/apply_ohos_patches.py [--cache <PUB_CACHE>]
+    python harmony/toolchain/apply_ohos_patches.py [--cache <PUB_CACHE>]
+
+幂等:每个补丁都靠"改前先看有没有标记"来判断是否已打过。
 """
 from __future__ import annotations
 
@@ -23,7 +30,7 @@ import pathlib
 import subprocess
 import sys
 
-REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 PATCH_TARGET_PLATFORM = REPO_ROOT / "harmony" / "patches" / "ohos" / "patch_target_platform_ohos.py"
 
 # --- 2) super_native_extensions:跳过 Rust 交叉编译 ------------------------

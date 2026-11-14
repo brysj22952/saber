@@ -1,21 +1,25 @@
 ﻿#!/usr/bin/env python3
-"""prepare_signing.sh 的 Windows 版 —— 准备签名材料并写入 ohos/build-profile.json5。
+"""准备签名材料,并把配置写进 ohos/build-profile.json5(两个平台共用)。
 
-与 toolchain/ohos/prepare_signing.sh 等价,三条路径:
+三条路径,按优先级自动判断:
 
   1. AGC(华为开发者账号)签发的材料齐全
      (signing/app.p12 + signing/app.p7b + signing/app.cer)
      -> 校验证书与 profile 是否配套,写配置
      -> 产物能装到「调试 Profile 白名单里的 HarmonyOS NEXT 真机」
   2. 已有 OpenHarmony 社区证书材料(signing/saber.p12 + signing/saber.p7b)
-     -> 直接写配置 -> 产物只能装到 OpenHarmony 设备 / DevEco 模拟器
-  3. 什么都没有 -> 用 SDK 自带的社区证书现场生成一套
-
-与 bash 版的差别:bash 版会 source use_agc_signing.sh,这里把那段逻辑直接
-用 Python 实现(node 只用来加密密码,那一步本来就跨平台)。
+     -> 直接写配置
+     -> 产物只能装到 OpenHarmony 设备 / DevEco 模拟器
+  3. 什么都没有
+     -> 用 SDK 自带的社区证书现场生成一套
+     -> 同上,只能装到 OpenHarmony 设备 / 模拟器
 
 用法:
-    python harmony/toolchain/windows/prepare_signing.py [--password 123456] [--alias saber-key]
+    python harmony/toolchain/prepare_signing.py [--password 123456] [--alias saber-key]
+
+环境变量:
+    STORE_PWD  密钥库密码(默认 123456)
+    ALIAS      密钥别名(默认 saber-key)
 """
 from __future__ import annotations
 
@@ -30,7 +34,7 @@ import subprocess
 import sys
 import tempfile
 
-REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 TOOLCHAIN = REPO_ROOT / "harmony" / "toolchain"
 SIGN_DIR = REPO_ROOT / "ohos" / "signing"
 BUILD_PROFILE = REPO_ROOT / "ohos" / "build-profile.json5"
