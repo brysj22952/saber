@@ -265,6 +265,44 @@ harmony\toolchain\dist\install-harmony.bat        # Windows
 
 ## 5. 怎么合并回上游主干
 
+### 5.0 三个仓库的关系
+
+| 仓库 | 地址 | 说明 |
+|---|---|---|
+| **上游官方** | https://github.com/saber-notes/saber | Saber 本体(5044 star)。**我们不往这里推** |
+| **你的 fork** | https://github.com/brysj22952/saber | 父仓库是上面那个。**我们推这里** |
+| 本地 | `D:\saber-oh\saber` | 分支 `feature/ohos-harmonyos` |
+
+我们的所有内容都在**你的 fork** 的 `feature/ohos-harmonyos` 分支上,
+以 `harmony/` 一个目录的形式存在 —— 上游 Saber 的源码在同一个仓库里保持原样。
+
+```
+saber-notes/saber  (上游)
+      │
+      └── brysj22952/saber  (你的 fork)  ← 我们推这里
+              └── feature/ohos-harmonyos
+                    ├── harmony/     ← 我们的全部改动
+                    └── ohos/        ← Flutter-OH 要求的工程骨架(挪不动)
+```
+
+### 5.1 取上游最新代码
+
+```bash
+git fetch upstream
+git log --oneline upstream/main -5      # 看上游更新了什么
+```
+
+> **本机连不上 GitHub** —— 所以 `git fetch upstream` 要走 Seoul 中转:
+>
+> ```bash
+> git fetch root@10.0.0.1:/root/hzq/saber-ohos/saber \
+>     refs/remotes/origin/main:refs/remotes/upstream/main
+> ```
+>
+> 或者直接跑 `bash harmony/scripts/fetch_upstream.sh`。
+
+### 5.2 合并
+
 上游 Saber 的文件在仓库里是原样的,所以合并很直接:
 
 ```bash
@@ -276,6 +314,24 @@ git rebase upstream/main          # 或 git merge upstream/main
 (上游改了对应的文件时,补丁会打不上,重新 `git apply` 解决一下即可)。
 
 `.gitignore` 末尾那两行如果上游也改了同一处,手动合一下就行(都是纯忽略规则)。
+
+**怎么知道补丁还能不能打?**
+
+```bash
+bash harmony/scripts/apply_upstream_patches.sh --check
+```
+
+在切换到上游分支的工作区里跑,或者用临时 worktree:
+
+```bash
+git worktree add --detach /tmp/up upstream/main
+cp harmony/patches/upstream/*.patch /tmp/up/
+cd /tmp/up && git apply --check *.patch     # 逐条报 OK / 冲突
+```
+
+> 2026-11-14 实测:上游从 `c85af40` 前进到 `d15bd86d`(23 个提交),
+> 其中改了 `toolbar.dart` / `settings.dart` / `pubspec.yaml` ——
+> 但我们那 5 个补丁**全部仍然干净应用** ✓(改动落在不同上下文上)。
 
 如果想把鸿蒙适配整体从上游分支里摘掉:
 
