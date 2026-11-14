@@ -67,33 +67,12 @@ coverage/
 # temp files for fdroid pubspec.lock
 /tmpfdroid/
 
-# OpenHarmony / HarmonyOS(鸿蒙)适配
-#
-# 签名材料是「你的」签名身份,泄露等于任何人都能冒充你的应用签名,
-# 因此这里显式忽略(ohos/.gitignore 里也有一份)。
-/ohos/signing/
-/ohos/local.properties
-/ohos/node_modules/
-/ohos/oh_modules/
-/ohos/.hvigor/
-/ohos/entry/oh_modules/
-/ohos/entry/build/
-/ohos/entry/.hvigor/
-/ohos/entry/src/main/resources/rawfile/flutter_assets/
-/ohos/entry/libs/
-
-# toolchain/ohos 的本地产物(备份、下载的二进制、npm 依赖)
-/toolchain/ohos/backup/
-/toolchain/ohos/agc-cli/node_modules/
-/toolchain/ohos/ohos-aot-win/
-/toolchain/ohos/fs_build/
-__pycache__/
-*.pyc
-
-# 打包给终端用户的安装产物
+# --- HarmonyOS (OpenHarmony) port -------------------------------------------
+# See harmony/README.md. These two rules only ignore our own build artifacts.
+# The dependency-override file is the canonical copy in
+# harmony/toolchain/pubspec_overrides.yaml, copied to the repo root by the
+# build script (pub only reads the root one). Keeping it out of version
+# control stops unrelated builds from being forced onto the HarmonyOS
+# branches of the plugins.
 /saber-ohos-kit/
-
-# 依赖覆盖文件:仓库里存的是 toolchain/ohos/pubspec_overrides.yaml,
-# 构建时由 scripts/build_ohos.sh 复制到根目录。根目录这份是本地产物,
-# 提交上去会让与鸿蒙无关的构建也被迫拉取鸿蒙分支插件。
 /pubspec_overrides.yaml

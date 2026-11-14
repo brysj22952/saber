@@ -24,7 +24,6 @@ import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/components/theming/uni_icon.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/flavor_config.dart';
-import 'package:saber/data/is_open_harmony.dart';
 import 'package:saber/data/is_this_a_test.dart';
 import 'package:saber/data/locales.dart';
 import 'package:saber/data/prefs.dart';
@@ -549,21 +548,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 SettingsSubtitle(subtitle: t.settings.prefCategories.advanced),
                 if (isSentryAvailable) const SettingsSentryConsent(),
-                // 鸿蒙上不显示:系统选择器给的目录授权只在本次会话内有效
-                // (见 FileManager._recoverFromUnreachableCustomDataDir),
-                // 把笔记搬出去就再也搬不回来了。
                 if (Platform.isAndroid)
                   SettingsDirectorySelector(
                     title: t.settings.prefLabels.customDataDir,
                     icon: Icons.folder,
                   ),
-                // 鸿蒙上不显示:dart:io 的 Platform.isLinux 在鸿蒙里为真
-                // (鸿蒙是 Linux 内核),但系统里没有 xdg-open / 文件管理器,
-                // 点这个按钮什么也不会发生。
-                if (!isOpenHarmony &&
-                    (Platform.isWindows ||
-                        Platform.isLinux ||
-                        Platform.isMacOS))
+                if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
                   SettingsButton(
                     title: t.settings.openDataDir,
                     icon: Icons.folder_open,

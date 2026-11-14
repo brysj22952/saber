@@ -4,6 +4,8 @@
 /.idea
 **/build
 /.hvigor
+**/.hvigor
+**/oh_modules
 .cxx
 /.clangd
 /.clang-format
@@ -15,11 +17,9 @@
 /package-lock.json
 
 **/src/main/resources/rawfile/flutter_assets/
-**/libs/**/libapp.so
-**/libs/**/libflutter.so
-**/libs/**/libvmservice_snapshot.so
+**/libs/
 
-# 签名材料:密钥库(.p12)、证书(.cer/.pem)、Profile(.p7b)、material/ 密钥材料。
-# 这些是「你的」签名身份,绝不能进版本库 —— 泄露等于任何人都能冒充你的应用签名。
-# 需要签名时按 docs/ohos.md §4 生成即可。
+# 签名材料:私钥(.p12)、证书(.cer/.pem)、profile(.p7b)、material/ 密钥材料。
+# 这些是你的签名身份,绝对不能进版本库 —— 泄露等于任何人都能冒充你的应用签名。
+# 需要签名时按 harmony/docs/ohos.md §4 生成即可。
 /signing/

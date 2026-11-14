@@ -13,7 +13,6 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:saber/components/home/sort_button.dart';
-import 'package:saber/data/is_open_harmony.dart';
 import 'package:saber/data/nextcloud/saber_syncer.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/strings.g.dart';
@@ -71,51 +70,10 @@ class FileManager {
     String? documentsDirectory,
     bool shouldWatchRootDirectory = true,
   }) async {
-    await _recoverFromUnreachableCustomDataDir();
-
     FileManager.documentsDirectory =
         documentsDirectory ?? await getDocumentsDirectory();
 
     if (shouldWatchRootDirectory) unawaited(watchRootDirectory());
-  }
-
-  /// 鸿蒙上「自定义数据目录」拿到的目录授权只在**本次会话**内有效 ——
-  /// 系统没有提供把授权持久化的接口(Android 的 SAF 有
-  /// `persistGrant: true`,鸿蒙的 `DocumentViewPicker` 没有对应物),
-  /// 所以应用重启之后就再也读不到那个目录了。
-  ///
-  /// 这种情况下如果还把 `customDataDir` 留着,应用里每一篇笔记都会变成
-  /// `PathAccessException`,而且连设置里的那个入口都会点不开
-  /// (`Directory.existsSync()` 自己就会抛异常)。所以这里主动回退到
-  /// 默认目录,至少让应用还能正常打开。
-  ///
-  /// 只在鸿蒙上做这个兜底,其它平台保持上游的行为。
-  static Future<void> _recoverFromUnreachableCustomDataDir() async {
-    if (!isOpenHarmony) return;
-
-    final String? customDir = stows.customDataDir.value;
-    if (customDir == null) return;
-
-    if (_isReadableDirectory(customDir)) return;
-
-    log.warning(
-      'Custom data directory $customDir is not accessible (the HarmonyOS '
-      'file picker grant does not survive a restart), falling back to the '
-      'default data directory',
-    );
-    stows.customDataDir.value = null;
-  }
-
-  static bool _isReadableDirectory(String path) {
-    try {
-      final Directory dir = Directory(path);
-      if (!dir.existsSync()) return false;
-      // existsSync() 只判断「在不在」,列一下才知道有没有读权限。
-      dir.listSync();
-      return true;
-    } catch (e) {
-      return false;
-    }
   }
 
   static Future<String> getDocumentsDirectory() async =>
@@ -183,33 +141,6 @@ class FileManager {
             rethrow;
           }
         }
-      }
-    }
-  }
-
-  /// 把 [oldDir] 里的内容**复制**到 [newDir](源文件保留不动)。
-  ///
-  /// 跟 [moveDirContents] 的区别是不删除源文件 —— 鸿蒙上系统选择器给的
-  /// 目录授权只在本次会话内有效,笔记只能「复制」到用户选的目录,
-  /// 不能「搬」过去:搬走了就再也搬不回来(重启后应用就读不到那个目录了)。
-  static Future<void> copyDirContents({
-    required Directory oldDir,
-    required Directory newDir,
-  }) async {
-    await newDir.create(recursive: true);
-
-    await for (final entity in oldDir.list(recursive: true)) {
-      final relative = p.relative(entity.path, from: oldDir.path);
-      final targetPath = p.join(newDir.path, relative);
-
-      if (entity is Directory) {
-        await Directory(targetPath).create(recursive: true);
-        continue;
-      }
-
-      if (entity is File) {
-        await entity.parent.create(recursive: true);
-        await entity.copy(targetPath);
       }
     }
   }
