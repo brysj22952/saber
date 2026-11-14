@@ -2,7 +2,7 @@
 """
 backport_api22_24_declarations.py
 ========================================================================
-Toolchain-side fix (lives in toolchain/ohos/, not part of the app itself).
+Toolchain-side fix (lives in harmony/toolchain/, not part of the app itself).
 
 Why this exists
 ---------------

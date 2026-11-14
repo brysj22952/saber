@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # fix_sdk_permissions.sh
 #
-# Toolchain-side fix (lives in toolchain/ohos/, not part of the app itself).
+# Toolchain-side fix (lives in harmony/toolchain/, not part of the app itself).
 #
 # The SDK archives are extracted with plain `unzip` / `tar`, which does not
 # carry the POSIX execute bit. hvigor then fails with

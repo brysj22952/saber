@@ -32,7 +32,7 @@ The patch is idempotent and re-applied automatically by setup_sdk.ps1, because
 undo it.
 
 Usage:
-    python toolchain/ohos/windows/align_const_finder.py --flutter <FLUTTER_ROOT>
+    python harmony/toolchain/windows/align_const_finder.py --flutter <FLUTTER_ROOT>
 """
 from __future__ import annotations
 

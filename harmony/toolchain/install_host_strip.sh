@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # install_host_strip.sh
 #
-# Toolchain-side fix (lives in toolchain/ohos/, not part of the app itself).
+# Toolchain-side fix (lives in harmony/toolchain/, not part of the app itself).
 #
 # Problem
 # -------

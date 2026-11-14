@@ -20,7 +20,7 @@ So only the three source patches remain:
      runtime is Linux-based.
 
   2. flutter framework: add a compile-time switch FLUTTER_OHOS_AOT_BUILD
-     (delegated to toolchain/ohos/patch_ohos_aot_platform.py, already
+     (delegated to harmony/toolchain/patch_ohos_aot_platform.py, already
      portable).
 
   3. flutter_tools/flutter_plugins.dart: move the ohos branch to the front
@@ -29,7 +29,7 @@ So only the three source patches remain:
      registered (path_provider_linux) and the app renders white.
 
 Usage:
-    python toolchain/ohos/windows/setup_ohos_aot.py [--flutter <FLUTTER_ROOT>]
+    python harmony/toolchain/windows/setup_ohos_aot.py [--flutter <FLUTTER_ROOT>]
 """
 from __future__ import annotations
 

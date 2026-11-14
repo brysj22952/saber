@@ -15,7 +15,7 @@
 用 Python 实现(node 只用来加密密码,那一步本来就跨平台)。
 
 用法:
-    python toolchain/ohos/windows/prepare_signing.py [--password 123456] [--alias saber-key]
+    python harmony/toolchain/windows/prepare_signing.py [--password 123456] [--alias saber-key]
 """
 from __future__ import annotations
 

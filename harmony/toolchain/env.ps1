@@ -2,9 +2,9 @@
   env.ps1 —— Saber 鸿蒙(HarmonyOS NEXT)构建环境变量(Windows 版)
 
   用法(在 PowerShell 里点源引入):
-      . .\toolchain\ohos\env.ps1
+      . .\harmony\toolchain\env.ps1
 
-  与 toolchain/ohos/env.sh 完全对应,只是换成 Windows 的路径与 PATH 分隔符。
+  与 harmony/toolchain/env.sh 完全对应,只是换成 Windows 的路径与 PATH 分隔符。
 
   默认目录布局:
       <SABER_OHOS_ROOT>\
