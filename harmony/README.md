@@ -176,7 +176,7 @@ bash harmony/scripts/apply_upstream_patches.sh --check    # 只看状态
 |---|---|---|
 | Flutter | [Flutter-OH](https://gitcode.com/oh-flutter/flutter_flutter) `3.47.9-ohos-1.0.0` | **不是官方 Flutter** —— 官方版没有 OHOS 平台支持 |
 | 鸿蒙 SDK | HarmonyOS **6.0.1(API 21)** | DevEco command-line-tools 6.0.1.251 |
-| 构建工具 | ohpm 5.1.3 + hvigor 5.18.5 | command-line-tools 自带 |
+| 构建工具 | ohpm 6.0.1 + hvigor 6.21.1 | command-line-tools 6.0.1.251 自带 |
 | JDK | 17 | 脚本会自动找 |
 
 详细的目录布局、环境变量、SDK 下载:[harmony/docs/ohos.md](docs/ohos.md)。

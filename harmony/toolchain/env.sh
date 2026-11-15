@@ -32,7 +32,7 @@ export OHOS_HOME="$OHOS_SDK_HOME"
 export HOS_SDK_HOME="$OHOS_SDK_HOME"
 export OHOS_API_DIR
 
-# --- DevEco 命令行工具 (ohpm 5.1.3 / hvigor 5.18.5) -----------------------
+# --- DevEco 命令行工具 (ohpm 6.0.1 / hvigor 6.21.1) -----------------------
 export DEVECO_TOOLS
 export DEVECO_NODE_HOME="$DEVECO_TOOLS/tool/node"
 export PATH="$DEVECO_TOOLS/bin:$DEVECO_TOOLS/tool/node/bin:$PATH"

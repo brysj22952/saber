@@ -35,7 +35,7 @@ Saber 的业务源码(`lib/`、`pubspec.yaml`)一个字节都没改,
 |---|---|---|
 | Flutter | [Flutter-OH](https://atomgit.com/oh-flutter/flutter_flutter) `3.47.9-ohos-1.0.0` | **不是官方 Flutter** —— 官方版没有 OHOS 平台支持 |
 | 鸿蒙 SDK | HarmonyOS **6.0.1(API 21)** | DevEco command-line-tools 6.0.1.251 |
-| 构建工具 | ohpm 5.1.3 + hvigor 5.18.5 | command-line-tools 自带 |
+| 构建工具 | ohpm 6.0.1 + hvigor 6.21.1 | command-line-tools 6.0.1.251 自带 |
 
 > 官方 Flutter 没有 `TargetPlatform.ohos`,也没有 OHOS 的构建目标,
 > 用官方版跑 `flutter build hap` 会直接报 "Unknown operating system"。
@@ -109,7 +109,7 @@ hdc shell aa start -a EntryAbility -b com.sabernotes.saber
 |---|---|
 | Flutter | [Flutter-OH](https://atomgit.com/oh-flutter/flutter_flutter) `3.47.9-ohos-1.0.0` |
 | 鸿蒙 SDK | HarmonyOS **6.0.1(API 21)**(DevEco command-line-tools 6.0.1.251) |
-| 构建工具 | ohpm 5.1.3 + hvigor 5.18.5 |
+| 构建工具 | ohpm 6.0.1 + hvigor 6.21.1 |
 | JDK | 17 |
 
 ### 1.2 环境变量
@@ -577,6 +577,72 @@ hdc install build/ohos/hap/entry-default-signed.hap
 hdc shell aa start -a EntryAbility -b com.sabernotes.saber
 ```
 
+### 4.5.1 新设备装机(profile 白名单 → 重签 → 装机)
+
+调试 Profile 里的 `debug-info.device-ids` 是**设备白名单**。
+装到新设备时报:
+
+```
+code:9568423  the device is unauthorized,
+make sure the UDID of your device is configured in the signing profile
+```
+
+就是这台设备的 UDID 不在名单里。鸿蒙强制验签,**没有旁路**:
+`hdc install` 没有 `--no-check-signature`,设备端 `bm install` 也没有跳过校验的开关。
+
+完整流程(2026-11-15 实测,给 Pura X Max 装机):
+
+1. **注册设备** —— AGC →「ID、证书和Profile」→「设备」→「添加设备」
+   - 名称随意,类型选设备形态(手机 / 平板 / PC…);
+   - UDID:`hdc shell bm get --udid`。
+
+2. **把新设备加进现有 Profile** —— AGC →「Profile」→ 找到调试 Profile
+   →「**编辑设备**」→ 勾选新设备 →「确认修改」,
+   提示 *profile内容已更新,请重新下载并更新软件包*。
+
+3. **重新下载 Profile** —— 同一行的「下载」→ 得到新的 `.p7b`,
+   覆盖 `ohos/signing/app.p7b`。
+
+4. **重新签名并装机** —— 两条路都行:
+
+   *重新构建*(~10 分钟):
+
+   ```powershell
+   powershell -File harmony\scripts\build_ohos.ps1 -Mode release
+   ```
+
+   *只重签*(秒级,hvigor 会留下未签名包
+   `ohos/entry/build/default/outputs/default/entry-default-unsigned.hap`):
+
+   ```powershell
+   java -jar <SDK>\openharmony\toolchains\lib\hap-sign-tool.jar sign-app `
+     -mode localSign -keyAlias saber-key -keyPwd 123456 `
+     -appCertFile ohos\signing\app-cert.pem -profileFile ohos\signing\app.p7b `
+     -inFile ohos\entry\build\default\outputs\default\entry-default-unsigned.hap `
+     -signAlg SHA256withECDSA -keystoreFile ohos\signing\app.p12 -keystorePwd 123456 `
+     -outFile build\ohos\hap\entry-default-signed.hap -compatibleVersion 21 -signCode 1
+   ```
+
+   验一下签对了:
+
+   ```powershell
+   java -jar <SDK>\openharmony\toolchains\lib\hap-sign-tool.jar verify-app `
+     -inFile build\ohos\hap\entry-default-signed.hap -outCertChain out-chain.cer -outProfile out-profile.p7b
+   ```
+
+   `out-profile.p7b` 与 `ohos/signing/app.p7b` 的哈希应完全一致。
+
+5. **装机 + 启动**:
+
+   ```bash
+   hdc -t <ip>:<port> install -r build/ohos/hap/entry-default-signed.hap
+   hdc -t <ip>:<port> shell "aa start -a EntryAbility -b com.sabernotes.saber"
+   ```
+
+> 首次用 hdc 连无线调试的设备会显示 `Unauthorized`,**再连一次**就通过。
+>
+> `snapshot_display` 出的截图只能存成 `.jpeg`(`hdc file recv` 会拒绝 `.png`)。
+
 ### 4.6 平板适配
 
 `ohos/entry/src/main/module.json5` 的 `deviceTypes` 已经加上 `tablet` 与 `2in1`:
@@ -596,7 +662,7 @@ hdc shell aa start -a EntryAbility -b com.sabernotes.saber
 | `Profile cert must a cert chain` | `certpath` 指向了单张证书 | 要用完整证书链 |
 | `11010001 ... storePassword ... less than 32` | 密码没加密 | 走 `use_agc_signing.sh`,别手填明文 |
 | 安装报「签名证书不匹配」 | `.p7b` 里的 Bundle Name 与应用实际包名不一致 | 两边都要改成同一个 |
-| `code:9568393` | Profile 没包含这台设备的 UDID | 在 AGC 的 Profile 里补上 UDID 重新生成 |
+| `code:9568393` / `code:9568423` | Profile 没包含这台设备的 UDID | 见 §4.5.1:AGC 里加设备 →「编辑设备」勾选 → 重新下载 `.p7b` → 重签装机 |
 | `failed to verify pkcs7 file` | 证书链顺序/内容不对 | 确认 `certpath` 是链且 PEM 格式正确 |
 
 ### 4.8 上架前的检查项

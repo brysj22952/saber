@@ -207,6 +207,7 @@ $env:SSH_ASKPASS = $ask; $env:SSH_ASKPASS_REQUIRE = 'force'; $env:DISPLAY = '1'
 | 命令行参数被拆成两个 | PS 5.1 把未加引号的 `lib/main.dart` 当成"表达式 + 属性访问" | **给路径加引号**;看到日志里参数被拆开先怀疑调用方 |
 | flutter 命令卡住不动 | `flutter.bat` 的锁被强杀的任务留下 | 杀残留 dart 进程、删 `bin\cache\flutter.bat.lock` |
 | `Wrong full snapshot version` | flutter_tools 快照与 dartvm.exe 的 SDK hash 不一致 | 两个都要恢复成同一份 |
+| 构建脚本报 `NativeCommandError`、退出码 1,但日志里有 `√ Built ...` | flutter 把提示写到 stderr,PS 5.1 把它包装成错误 | **以 `√ Built` 为准**,构建其实是成功的(退出码不可信) |
 
 ---
 

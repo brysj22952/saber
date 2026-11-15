@@ -144,3 +144,54 @@ Linux 主机上 release 构建默认不可用,四层障碍逐个绕过:
 - 全部适配内容收进 `harmony/`,上游源码保持原样(见 [`harmony/README.md`](../README.md))
 - 5 处对上游的改动改成了补丁(`harmony/patches/upstream/`),便于以后合并回上游
 - 消除了 bash / Python 双实现,逻辑只剩一份
+
+---
+
+## 2026-11-15 后续:装到第二台设备(手机)
+
+| 项 | 值 |
+|---|---|
+| 设备 | HUAWEI Pura X Max 典藏版(`HOP-AL10`) |
+| 系统 | OpenHarmony 7.0.0.111(SP12C00E111R4P4),API 26 |
+| 连接 | 无线调试,`192.168.1.40:45059`(端口每次重开都变) |
+| 签名 | 沿用平板那套 AGC 调试证书,只是把 Profile 的设备白名单扩到两台 |
+
+> 设备 UDID 属于你的设备,不入库 —— 用 `hdc shell bm get --udid` 现取。
+
+### 踩到的坑:profile 的设备白名单
+
+首次安装报:
+
+```
+code:9568423  the device is unauthorized,
+make sure the UDID of your device is configured in the signing profile
+```
+
+调试 Profile 里的 `debug-info.device-ids` 只绑了平板那一台。
+鸿蒙强制验签,**没有旁路**:`hdc install` 没有 `--no-check-signature`,
+设备端 `bm install` 也没有跳过校验的开关。
+
+解法 —— 不用重新申请证书,直接改现有 Profile 的设备白名单:
+
+1. AGC「ID、证书和Profile → 设备」→ 添加设备(UDID + 设备类型)
+2. AGC「Profile」→ `saber_debug_profile` → **编辑设备** → 勾选新设备 → 确认修改
+   (提示 *profile内容已更新,请重新下载并更新软件包*)
+3. 同一行「下载」→ 新的 `app.p7b`(白名单变成两台)
+4. `hap-sign-tool sign-app` 重签 hvigor 留下的未签名包(秒级,不用重新构建)
+5. `hdc install -r` + `aa start`
+
+完整步骤见 [`harmony/docs/ohos.md`](../docs/ohos.md) §4.5.1。
+
+### 结果
+
+```
+install bundle successfully.
+start ability successfully.
+```
+
+界面正常渲染(首页「最近笔记」+「欢迎使用 Saber」),
+日志里 `FilePickerPlugin` / `SharedPreferencesOhosPlugin` / `PathProviderPlugin`
+等鸿蒙插件都注册成功,无 Dart 异常。
+
+![Saber 运行在 Pura X Max 上](manual/shots/17-harmonyos-phone-home.jpeg)
+

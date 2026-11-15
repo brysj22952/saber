@@ -13,13 +13,14 @@ Flutter-OH 3.47.9-ohos-1.0.0 的引擎 har(`flutter_embedding_*.har`)里写着:
 
   * 官方 HarmonyOS SDK 需要登录 developer.huawei.com 下载(本机 403);
   * OpenHarmony 公开 SDK 最新只到 API 20;
-  * hvigor 5.18.5 的 osVersionMapper 只认到 5.1.0(18)。
+  * 老版本 hvigor(5.18.5)的 osVersionMapper 只认到 5.1.0(18);
+    现在装的 hvigor 6.21.1 已认到 6.0.1(21),但 har 里声明的 24 依然超纲。
 
 于是 hvigor 在 MergeProfile 阶段直接报:
     Specification Limit Violation
     The compatibleSDKVersion 18 cannot be smaller than 24 declared in library flutter.
 
-本脚本把 har 里的 API 声明下调到 18(= 5.1.0(18)),让 hvigor 的校验通过,
+本脚本把 har 里的 API 声明下调到当前 SDK 的 21(= 6.0.1(21)),让 hvigor 的校验通过,
 引擎的 ArkTS 代码则按当前 SDK 编译。
 
 用法: python3 patch_engine_har_api.py [api=21]
