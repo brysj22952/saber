@@ -76,7 +76,8 @@ def main():
             time.sleep(18)
         else:
             # 先点到应用的「版本/升级」页,保证读到的是版本状态而不是别的页面。
-            # 点完如果没读到包名(页面没切过来 / 有人同时在操作控制台),再点一次。
+            # 点完如果没读到包名(页面没切过来 / 有人同时在操作控制台),再点一次;
+            # 还是会话被重定向到「华为 APIs 使用协议」这类页面,就把整个控制台重载一次。
             for attempt in range(3):
                 f.c.eval(
                     "(() => {const el=[...document.querySelectorAll('.item-text')]"
@@ -91,6 +92,13 @@ def main():
                     break
                 if attempt < 2:
                     time.sleep(6)
+            else:
+                # 兜底:重载控制台(SPA 会按 hash 回到原来的路由)
+                f.c.send("Page.reload")
+                time.sleep(16)
+                f.close()
+                f = Frame(port)
+                text = f.ev("(() => document.body.innerText.replace(/\\s+/g, ' '))()") or ""
         text = f.ev("(() => document.body.innerText.replace(/\\s+/g, ' '))()") or ""
         # iframe 里的版本页可能还在加载,没读到状态就再等一轮
         if "状态" not in (text or ""):
