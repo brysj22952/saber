@@ -25,6 +25,8 @@ from agc_console import Frame  # noqa: E402
 STATUS_PATTERNS = [
     "预审不通过",
     "审核不通过",
+    "正在审核",
+    "正在等待审核",
     "审核中",
     "预审中",
     "已上架",

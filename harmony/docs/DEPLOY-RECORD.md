@@ -318,13 +318,19 @@ zip 内部结构 = `pack.info` + `entry-default.hap`(约 39MB),`pack.info` 里:
 ### 阶段 5 · 轮询审核(进行中)
 
 ```bash
-# 每天/每小时查一次版本状态
-python3 harmony/toolchain/agc/agc_console.py top click 版本/升级
-python3 harmony/toolchain/agc/agc_console.py iframe text | head -40
+# 每次查状态
+python3 harmony/toolchain/agc/agc_version_status.py
 ```
 
-关注三个状态:**预审中 → 审核中 → 已上架/已发布**;
-若变成「预审不通过」,点「检测报告」按报告修,重新构建并重新提交。
+**2026-11-15 18:09:预审通过**。版本历史记录里的时间线:
+`准备提交 → 预审中(18:07) → **正在审核**(18:09)`,即已进应用市场审核团队队列 ✓。
+
+AGC 给的两条提示:
+* 「如果不通过,您的应用发布申请会在几小时内自动驳回,您可以马上启动问题修复」;
+* 「请您关注 APP 个人信息保护合规性检测结果,并及时进行整改」(异步检测,结果在控制台消息中心)。
+
+接下来等华为侧人工审核(通常 1–7 个工作日)。状态变化时用上面那条命令查,
+并把结论写进 [`APP-RELEASE-RECORD.md`](APP-RELEASE-RECORD.md)。
 
 ### 这一阶段踩到的坑(AGC 控制台是 Vue SPA,只能靠 CDP 驱动)
 
