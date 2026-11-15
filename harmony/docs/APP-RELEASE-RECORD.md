@@ -52,6 +52,23 @@
 
 ---
 
+## 若被打回(预审不通过 / 审核驳回)的处理流程
+
+1. 打开 AGC → 应用管理 → Saber → 版本/升级 → 点「检测报告」或「审核意见」,**先把报告原文贴进本表**。
+2. 按报告逐条修,常见对应关系:
+
+   | 报告里常见的说法 | 怎么处理 |
+   |---|---|
+   | 「隐私政策 URL 无法访问 / 与应用功能不符」 | 改 `harmony/docs/privacy-policy.html`,推 gh-pages 后重填隐私政策网址 |
+   | 「权限说明与实际申请不符」 | 实际只申请 `ohos.permission.INTERNET`(已核对提交包内 `module.json` ✓),照实写 |
+   | 「截图含个人信息 / 尺寸不符」 | 用 `harmony/toolchain/capture_store_screenshots.py` 重拍(严格 16:9) |
+   | 「分类 / 年龄分级不符」 | 改应用分类标签、重填年龄分级问卷 |
+   | 「功能与描述不符 / 崩溃」 | 重新构建 `.app` 并**重新上传新版本**(versionCode 递增)再提交 |
+
+3. 需要改包时:改代码 → `flutter build app --release --build-name=<x> --build-number=<N+1>
+   --dart-define=FLUTTER_OHOS_AOT_BUILD=true` → AGC 软件包管理上传新 `.app` → 版本页「去选择」选新包 → 提交审核。
+4. 每一轮结论都追加到本表,并在 [`DEPLOY-RECORD.md`](DEPLOY-RECORD.md) 里补一节细节。
+
 ## 查状态
 
 ```bash
