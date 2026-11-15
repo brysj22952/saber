@@ -70,6 +70,7 @@ AGC 版本历史记录里的时间线:
    | 「权限说明与实际申请不符」 | 实际只申请 `ohos.permission.INTERNET`(已核对提交包内 `module.json` ✓),照实写 |
    | 「截图含个人信息 / 尺寸不符」 | 用 `harmony/toolchain/capture_store_screenshots.py` 重拍(严格 16:9) |
    | 「分类 / 年龄分级不符」 | 改应用分类标签、重填年龄分级问卷 |
+   | 「应用名称与已有应用重复 / 不规范」 | 改应用名(包名 `com.sabernotes.saber` 与上游 Android 版 `com.adilhanney.saber` 不冲突 ✓),同时改 `harmony/docs/store-listing.md` 与商店介绍里的名字 |
    | 「功能与描述不符 / 崩溃」 | 重新构建 `.app` 并**重新上传新版本**(versionCode 递增)再提交 |
 
 3. 需要改包时:改代码 → `flutter build app --release --build-name=<x> --build-number=<N+1>
