@@ -384,6 +384,9 @@ AGC 给的两条提示:
 13. **`agc_console.py` 连的是 `/json/list` 的第一个标签页**。控制台里若同时开着别的应用页面,
     轮询脚本会读到**别的应用**的状态 —— 所以 `agc_version_status.py` 里加了
     「页面上必须出现 `com.sabernotes.saber` 才作数」的校验 ✓。
+14. **控制台会话久了会被重定向到「华为 APIs 使用协议」页**(iframe 里不再是业务页),
+    这时点侧边栏「版本/升级」是点不动的。`agc_version_status.py` 的兜底是
+    `Page.reload` —— SPA 会按 hash 回到原来的路由 ✓(实测 3 次重试 + 重载即可恢复 ✓)。
 
 ---
 
