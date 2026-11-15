@@ -244,3 +244,84 @@ python3 harmony/toolchain/agc/agc_upload.py ohos/signing/app.csr --scope iframe 
 直接拿去 `DOM.setFileInputFiles` 会报 `Could not find node with given id`;
 用 querySelector 查出来的 nodeId 才能用,而且浏览器会自动派发 change 事件。
 
+
+---
+
+## 2026-11-15 后续:上架华为应用市场 · 阶段 2–4(发布包重建 + 上架材料 + 上传)
+
+接着上一节(阶段 0–1)往下做。本节只写**结论和坑**,不写任何签名材料和 AGC 标识。
+
+### 阶段 2 · 用发布材料重新构建
+
+**结论**:商店要的是 **`.app` 包**(整包),不是 `.hap`。而且 `.app` **不能靠把 `.hap` 改名得到** ——
+改名的包 AGC 直接拒收,报 `amp.appPackage.996 软件包解析失败`。
+
+正确做法是让 hvigor 走 `assembleApp` 任务,由 Flutter 工具链生成 `pack.info` + 内层 HAP 并整体签名:
+
+```bash
+flutter build app --release --build-name=1.0.0 --build-number=1000000 \
+  --dart-define=FLUTTER_OHOS_AOT_BUILD=true
+```
+
+产物:`ohos/build/outputs/default/ohos-default-signed.app`(约 17MB)。
+zip 内部结构 = `pack.info` + `entry-default.hap`(约 39MB),`pack.info` 里:
+
+| 字段 | 值 |
+|---|---|
+| bundleName | `com.sabernotes.saber` |
+| bundleType | `app` |
+| version | code `1000000` / name `1.0.0` |
+| modules[0].deviceType | `default` / `tablet` / `2in1` |
+| apiVersion | compatible `21`,target `21`,releaseType `Release` |
+| packages[0].name | `entry-default`(与内层 HAP 文件名一致 ✓) |
+
+**验收(签名)**:用 `hap-sign-tool.jar verify-app` 解出包内 profile,`type == release`,
+且与 `ohos/signing/app-release.p7b` **逐字节一致**;`devices` 字段为空(无设备白名单)✓。
+
+### 阶段 3 · 上架材料
+
+| 材料 | 落地情况 |
+|---|---|
+| 应用图标 | `assets/icon/icon.png`(1024×1024 RGBA PNG,35KB)✓ |
+| 应用截图 | `harmony/docs/store-screenshots/{home,fabmenu,editor,whiteboard}.png`,4 张 **2353×1324(严格 16:9)** ✓ |
+| 截图生成 | 新增 `harmony/toolchain/capture_store_screenshots.py`(见下)✓ |
+| 隐私政策 | `harmony/docs/privacy-policy.html` → `https://brysj22952.github.io/saber/privacy-policy.html`(HTTP 200)✓ |
+| 商店文案 | 新增 `harmony/docs/store-listing.md`(简介/介绍/权限说明/开源声明/更新说明)✓ |
+| 应用分类 | 应用 → **工具**,主标签 **备忘录**,附加标签 笔记 ✓ |
+| 年龄分级 | 中国区 3+ / 巴西 所有年龄段 / 其他区域 3+(问卷全选「否」推导得出)✓ |
+
+**截图尺寸硬约束**:3~10 张、**宽高比必须 16:9**、长边 ≥1920。
+第一版拍成 2090×1324(比例 1.58)被拒,报「图片尺寸不符合要求,请重新上传」,
+改成把应用窗口调到内容区正好 16:9 再截,才通过。
+
+**新增工具:`harmony/toolchain/capture_store_screenshots.py`**
+用 `hdc` + `uitest` 在平板上自动拍 4 张商店图(首页 / 新建菜单 / 编辑器两笔 / 白板),
+脚本会先把浮动窗口宽度调成 `(高-70)*16/9`(标题栏 70px),再逐张截图、校验前台窗口、
+最后用 PIL 裁成精确 16:9。截图前会清空笔记区,保证画面里**没有任何个人笔记**。
+
+### 阶段 4 · 上传 + 提交审核
+
+| 项 | 状态 |
+|---|---|
+| 上传 `.app` | ✓「ohos-default-signed.app 上传成功」 |
+| 版本行 | `1.0.0（1000000）`,合法性 **已达标** ✓ |
+| 版本表单 | 应用介绍/一句话简介/隐私政策网址/隐私权利/是否涉及个人信息收集=否/AI 服务=不涉及/APP 类型=单机/主办单位=个人+与账号主体一致/上架时间=审核通过立即上架/4 张截图/年龄分级 —— 全部填好 ✓ |
+| 尚缺 | **应用负责人手机号码 + 短信验证码 + 邮箱**(需要本人提供,验证码要真机收短信) |
+| 提交审核 | ⏳ 待上述信息补齐后点「提交审核」 |
+
+### 这一阶段踩到的坑(AGC 控制台是 Vue SPA,只能靠 CDP 驱动)
+
+1. **`.app` 不能改名**:`.hap` 改名成 `.app` → `996 软件包解析失败`。见阶段 2 ✓。
+2. **应用信息页有「手机 / PC/2in1」两个设备页签**,图标、名称、分类、标签**两个页签都要填**。
+   只填手机页签时,版本页顶部会一直挂「您的应用信息页面还有必填信息未填写」✓。
+3. **年龄分级是问卷,不是表格**:面板里的分级表格一开始永远是空的(它只展示**已填过**的评级)。
+   正确路径是「设置」→「填写问卷」→ 11 道题逐题作答 → 「验证」→「提交」→ 再答「是否仅面向儿童=否」。
+   任一道题选了「否」都会展开子问题,子问题不答就卡在红标 ✓。
+4. **el-cascader(应用分类)不吃 JS 合成事件**:`el.click()` / `dispatchEvent` 都弹不出下拉,
+   必须用 CDP `Input.dispatchMouseEvent` 发**真实鼠标事件**,且坐标要用**顶层文档坐标**
+   (`iframeRect.left + 元素在 iframe 内的 x`)✓。
+5. **上传文件后 DOM 会重建**,旧的 nodeId 立刻失效 ⇒ 每传一张图/图标都要重新
+   `DOM.querySelectorAll` 取 nodeId,否则文件会落到错误的槽位或直接丢失 ✓。
+6. **「保存草稿」会清空「发布版本」里选好的包** ⇒ 提交审核前必须**最后再选一次**包,中间不要存草稿 ✓。
+7. **Python 侧 CDP 小坑**:`Runtime.evaluate` 不带 `contextId` 会落在**顶层文档**而不是 iframe,
+   取 iframe 里的元素要显式传 `contextId`;`Runtime.evaluate` 想要 DOM 节点引用要 `returnByValue=False` ✓。
