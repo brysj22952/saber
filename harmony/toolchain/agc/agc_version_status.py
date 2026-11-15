@@ -75,15 +75,22 @@ def main():
             f.c.send("Page.navigate", url=args.url)
             time.sleep(18)
         else:
-            # 先点到应用的「版本/升级」页,保证读到的是版本状态而不是别的页面
-            f.c.eval(
-                "(() => {const el=[...document.querySelectorAll('.item-text')]"
-                ".find(e=>e.innerText.trim()==='版本/升级'); if(el){el.click(); return 1;} return 0;})()"
-            )
-            time.sleep(9)
-            # 路由切换后 iframe 的隔离世界会被重建,旧 ctx 失效 ⇒ 重新建一个 Frame
-            f.close()
-            f = Frame(port)
+            # 先点到应用的「版本/升级」页,保证读到的是版本状态而不是别的页面。
+            # 点完如果没读到包名(页面没切过来 / 有人同时在操作控制台),再点一次。
+            for attempt in range(3):
+                f.c.eval(
+                    "(() => {const el=[...document.querySelectorAll('.item-text')]"
+                    ".find(e=>e.innerText.trim()==='版本/升级'); if(el){el.click(); return 1;} return 0;})()"
+                )
+                time.sleep(9)
+                # 路由切换后 iframe 的隔离世界会被重建,旧 ctx 失效 ⇒ 重新建一个 Frame
+                f.close()
+                f = Frame(port)
+                text = f.ev("(() => document.body.innerText.replace(/\\s+/g, ' '))()") or ""
+                if args.bundle and args.bundle in text:
+                    break
+                if attempt < 2:
+                    time.sleep(6)
         text = f.ev("(() => document.body.innerText.replace(/\\s+/g, ' '))()") or ""
         # iframe 里的版本页可能还在加载,没读到状态就再等一轮
         if "状态" not in (text or ""):
