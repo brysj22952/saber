@@ -61,6 +61,11 @@ def main():
     ap.add_argument("--port", type=int, default=None)
     ap.add_argument("--url", default=None, help="控制台地址;给了就跳转过去再读")
     ap.add_argument("--raw", action="store_true", help="把整页文本打出来")
+    ap.add_argument(
+        "--bundle",
+        default="com.sabernotes.saber",
+        help="期望看到的包名;页面上没有它就说明连到了别的应用/别的标签页,直接跳过",
+    )
     args = ap.parse_args()
 
     port = args.port or find_cdp_port()
@@ -89,6 +94,11 @@ def main():
 
     if args.raw:
         print(text[:3000])
+        return
+
+    # 页面上得有我们这个应用的包名,否则说明连到了别的标签页/别的应用,宁可不报
+    if args.bundle and args.bundle not in (text or ""):
+        print("状态: 跳过(页面上没有包名 %s,可能连到了别的标签页)" % args.bundle)
         return
 
     found = [s for s in STATUS_PATTERNS if s in text]
