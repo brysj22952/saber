@@ -338,6 +338,12 @@ AGC 给的两条提示:
   `requestPermissions` 只有 `ohos.permission.INTERNET` 一项 ✓,
   与商店「权限说明」文案逐条对得上 ✓(权限说明与实际不符是最常见的驳回理由之一)。
 - **商店素材合规**:4 张截图全部 2353×1324、严格 16:9、PNG ✓,满足「3~10 张 / 长边≥1920 / 比例 16:9」。
+- **隐私政策线上与仓库一致**:`gh-pages` 分支里的 `privacy-policy.html` 与
+  `https://brysj22952.github.io/saber/privacy-policy.html` 的 md5 相同 ✓,
+  审核员看到的就是审过的那一份 ✓。
+- **签名材料确实没进仓库**(用 git 反查):
+  `git ls-files ohos/signing/` 输出为空 ✓,`.p12/.cer/.p7b/.csr` 全部命中 `ohos/.gitignore` 的 `/signing/` 规则 ✓;
+  发布证书有效期到 2049 年 ✓(以后签新版本不受影响)。
 - **真机冒烟**(审核期间在平板上跑了一次,只启动自己的 App,没动别的应用):
   `aa start -a EntryAbility -b com.sabernotes.saber` → 「start ability successfully」,
   进程存活 ✓,`XComFlutterEngine` 正常起来 ✓,hilog 里**没有 FATAL/崩溃** ✓
