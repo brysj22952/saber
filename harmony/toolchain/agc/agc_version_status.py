@@ -14,6 +14,7 @@
 
 import argparse
 import json
+import time
 import re
 import sys
 import urllib.request
@@ -67,10 +68,22 @@ def main():
     try:
         if args.url:
             f.c.send("Page.navigate", url=args.url)
-            import time
-
             time.sleep(18)
+        else:
+            # 先点到应用的「版本/升级」页,保证读到的是版本状态而不是别的页面
+            f.c.eval(
+                "(() => {const el=[...document.querySelectorAll('.item-text')]"
+                ".find(e=>e.innerText.trim()==='版本/升级'); if(el){el.click(); return 1;} return 0;})()"
+            )
+            time.sleep(9)
+            # 路由切换后 iframe 的隔离世界会被重建,旧 ctx 失效 ⇒ 重新建一个 Frame
+            f.close()
+            f = Frame(port)
         text = f.ev("(() => document.body.innerText.replace(/\\s+/g, ' '))()") or ""
+        # iframe 里的版本页可能还在加载,没读到状态就再等一轮
+        if "状态" not in (text or ""):
+            time.sleep(10)
+            text = f.ev("(() => document.body.innerText.replace(/\\s+/g, ' '))()") or ""
     finally:
         f.close()
 
