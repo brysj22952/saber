@@ -4,6 +4,7 @@
 /backup/
 /agc-cli/node_modules/
 /ohos-aot-win/
+toolchain/ohos-aot-win/
 /fs_build/
 
 # Python 缓存

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saber 隐私政策(HarmonyOS 版)</title>
+<meta name="description" content="Saber(鸿蒙版)隐私政策:笔记默认只存在设备本地,不收集个人信息,无广告无统计。">
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0 auto; padding: 2.5rem 1.25rem 5rem; max-width: 46rem;
+    font: 16px/1.85 -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+    color: #1b1b1f; background: #fbfbfd;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { color: #e6e6e9; background: #16161a; }
+    h1, h2, h3 { color: #f5f5f7; }
+    code, a { color: #7fb2ff; }
+    hr { border-color: #34343a; }
+    table { border-color: #34343a; }
+    th, td { border-color: #34343a; }
+    th { background: #202028; }
+  }
+  h1 { font-size: 1.9rem; line-height: 1.3; margin: 0 0 .4rem; }
+  h2 { font-size: 1.25rem; margin: 2.4rem 0 .6rem; }
+  h3 { font-size: 1.05rem; margin: 1.6rem 0 .4rem; }
+  p, li { margin: .55rem 0; }
+  ul { padding-left: 1.4rem; }
+  code { background: rgba(127,127,127,.14); padding: .1em .35em; border-radius: 4px; font-size: .92em; }
+  hr { border: 0; border-top: 1px solid #ddd; margin: 2.6rem 0; }
+  a { color: #0b62d6; }
+  .meta { color: #6b6b73; font-size: .92rem; }
+  .box { border: 1px solid rgba(127,127,127,.35); border-radius: 10px; padding: .9rem 1.1rem; margin: 1.2rem 0; }
+  .box p:first-child { margin-top: 0; }
+  .box p:last-child { margin-bottom: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .95rem; }
+  th, td { border: 1px solid #ddd; padding: .5rem .7rem; text-align: left; vertical-align: top; }
+  th { background: #f2f2f5; }
+  footer { margin-top: 3rem; color: #6b6b73; font-size: .9rem; }
+</style>
+</head>
+<body>
+
+<h1>Saber 隐私政策</h1>
+<p class="meta">适用于 Saber 的 HarmonyOS(鸿蒙)版本 · 最后更新:2026 年 11 月</p>
+
+<div class="box">
+<p><strong>一句话总结:</strong>你的笔记默认<strong>只保存在你自己的设备上</strong>。
+本应用没有广告、没有统计 SDK、不收集任何个人信息,也不采集崩溃日志。</p>
+</div>
+
+<h2>1. 这个应用是什么</h2>
+
+<p>Saber 是一个<strong>开源的手写笔记应用</strong>,最初由 Adil Hanney 开发并开源。
+本应用是该项目的 <strong>HarmonyOS(鸿蒙)版本</strong>,使用 HarmonyOS 原生工具链
+(Flutter-OH / ArkTS)编译,面向 <strong>HarmonyOS NEXT</strong> 设备运行。</p>
+
+<table>
+<tr><th>项目</th><th>地址</th></tr>
+<tr><td>官方开源项目(Saber 本体)</td><td><a href="https://github.com/saber-notes/saber">https://github.com/saber-notes/saber</a></td></tr>
+<tr><td>本鸿蒙版本项目(含完整构建链)</td><td><a href="https://github.com/brysj22952/saber">https://github.com/brysj22952/saber</a>(分支 <code>feature/ohos-harmonyos</code>)</td></tr>
+<tr><td>开源许可证</td><td>GPL-3.0</td></tr>
+</table>
+
+<p>本应用的<strong>全部源代码</strong>(包括鸿蒙适配与构建工具链)都在上面的仓库里公开,
+你可以自行审阅、编译和再分发。因为是 GPL-3.0 项目,本应用同样以 GPL-3.0 发布。</p>
+
+<h2>2. 我们会收集哪些数据</h2>
+
+<p><strong>我们不收集任何个人信息。</strong>具体来说,本应用不会收集、上传或分享:</p>
+<ul>
+  <li>姓名、邮箱、手机号、通讯录、位置信息;</li>
+  <li>设备标识(IMEI、MAC、OAID、Android ID 等);</li>
+  <li>你的笔记内容、图片、白板 —— 除非你自己主动开启同步并指定了自己的服务器;</li>
+  <li>崩溃日志、性能数据、使用行为统计 —— 本应用<strong>没有接入崩溃上报与埋点 SDK</strong>,
+      设置页里也不存在任何此类开关(已在真机核对确认)。</li>
+</ul>
+
+<p>应用运行时<strong>不会与我们的任何服务器通信</strong>,开发者也无法看到你的任何数据。</p>
+
+<h2>3. 数据存在哪里</h2>
+
+<p>你的笔记、图片、白板和应用设置,默认<strong>只写在本机的应用私有目录里</strong>
+(HarmonyOS 沙箱机制保护,其他应用无法读取)。</p>
+
+<p>应用只申请了<strong>一个系统权限</strong>:</p>
+
+<table>
+<tr><th>权限</th><th>用途</th><th>什么时候用到</th></tr>
+<tr><td><code>ohos.permission.INTERNET</code></td><td>访问网络</td>
+    <td>仅当你<strong>主动开启 Nextcloud 同步</strong>并填写服务器地址后才会用到;
+        平时完全离线可用。</td></tr>
+</table>
+
+<p>应用<strong>不申请</strong>定位、相机、麦克风、通讯录、剪贴板等权限。
+「导入笔记」「从图库选图片」使用的是 HarmonyOS 系统自带的文件选择器,
+由系统临时授权、一次一用,应用不会因此获得相册或文件系统的长期访问权。</p>
+
+<h2>4. 开启 Nextcloud 同步之后</h2>
+
+<p>同步功能是<strong>完全可选</strong>的,你可以永远不开启。开启后:</p>
+<ul>
+  <li>服务器地址、用户名、密码<strong>由你自己填写</strong>,保存在设备的加密安全存储中
+      (HarmonyOS 系统提供的安全存储能力),不会明文落盘;</li>
+  <li>笔记在上传前会<strong>用随机密钥加密</strong>,服务端保存的是密文;</li>
+  <li>数据只在<strong>你自己的 Nextcloud 服务器</strong>与你的设备之间传输 ——
+      我们没有、也拿不到你的服务器地址和账号密码;</li>
+  <li>你可以在「设置」里随时<strong>注销</strong>,一键删除已保存的凭据并停止同步。</li>
+</ul>
+
+<h2>5. 数据保留与删除</h2>
+
+<ul>
+  <li>本地数据随应用一起存在,直到你手动删除笔记或卸载应用;</li>
+  <li><strong>卸载应用即删除全部本地数据</strong>(包括笔记、图片、白板、设置和已保存的凭据);</li>
+  <li>已经同步到你自己服务器上的数据,由你在服务器端自行管理 —— 卸载应用不会自动删除服务器上的副本。</li>
+</ul>
+
+<h2>6. 权限与网络的可控性</h2>
+
+<p>同步可以随时关闭。关闭后本应用不再发起任何网络请求。
+HarmonyOS 系统层面,你也可以随时在「设置 → 应用 → 权限」中撤销本应用的网络权限。</p>
+
+<h2>7. 政策变更</h2>
+
+<p>本政策如有变更,会随代码仓库一起更新(见第 1 节的仓库地址),
+历史版本可在 GitHub 的提交记录中查看。</p>
+
+<h2>8. 联系我们</h2>
+
+<p>对本政策或应用本身有疑问,请在仓库里提 issue:
+<a href="https://github.com/brysj22952/saber/issues">https://github.com/brysj22952/saber/issues</a>。</p>
+
+<hr>
+
+<h2>English summary</h2>
+
+<p>Saber is an <strong>open-source handwritten notes app</strong>. This is the
+<strong>HarmonyOS (HarmonyOS NEXT) build</strong>, compiled with the HarmonyOS
+native toolchain. The upstream project lives at
+<a href="https://github.com/saber-notes/saber">github.com/saber-notes/saber</a>;
+this HarmonyOS port, including its full build chain, is at
+<a href="https://github.com/brysj22952/saber">github.com/brysj22952/saber</a>
+(branch <code>feature/ohos-harmonyos</code>). Both are licensed under GPL-3.0.</p>
+
+<p>Your notes, images and whiteboard are stored <strong>only on your device</strong> by
+default. We collect <strong>no personal information</strong>, ship <strong>no ads and no
+analytics SDK</strong>, and do <strong>not collect crash logs</strong>. The app requests a
+single permission, <code>ohos.permission.INTERNET</code>, which is used only if you
+opt in to Nextcloud sync. With sync enabled, the server URL and credentials are kept in
+the device's secure storage and your notes are encrypted with a random key before upload;
+the data travels only between your device and the Nextcloud server you chose. Uninstalling
+the app deletes all local data.</p>
+
+<footer>
+Saber 鸿蒙版 · 隐私政策 · <a href="https://github.com/brysj22952/saber">源码公开</a>
+</footer>
+
+</body>
+</html>

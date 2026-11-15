@@ -195,3 +195,52 @@ start ability successfully.
 
 ![Saber 运行在 Pura X Max 上](manual/shots/17-harmonyos-phone-home.jpeg)
 
+
+---
+
+## 2026-11-15 后续:上架华为应用市场 · 阶段 0–1(环境自检 + 发布证书/Profile)
+
+按 [`harmony/docs/RELEASE-TO-APPGALLERY.md`](RELEASE-TO-APPGALLERY.md) 执行。
+
+### 阶段 0 · 环境自检
+
+| 项 | 结果 |
+|---|---|
+| 仓库 | `feature/ohos-harmonyos`,与 `fork/feature/ohos-harmonyos` 同步 |
+| Flutter-OH SDK | `/root/hzq/saber-ohos/flutter` |
+| OpenHarmony SDK | `/root/hzq/saber-ohos/ohos-sdk-root/ohos-sdk` |
+| DevEco 命令行工具 | `/root/hzq/saber-ohos/deveco-tools/command-line-tools` |
+| 构建产物 | `build/ohos/hap/entry-default-signed.hap`(上一次是 debug 包,阶段 2 会用发布材料重出) |
+| 浏览器 CDP | `127.0.0.1:9333` 活着,AGC 控制台已登录华为账号 |
+
+### 阶段 1 · 发布证书 + 发布 Profile
+
+| 项 | 值 |
+|---|---|
+| 发布证书 | `saber_release_2026`(发布证书,有效期至 2029-11-15) |
+| 发布 Profile | `saber_release_profile`(发布类型,无设备白名单) |
+| 本地落点 | `ohos/signing/app-release.cer`、`ohos/signing/app-release.p7b`(都在 `.gitignore` 里) |
+
+**复用了原来的密钥对**,没有重新生成 CSR/密钥 —— 重新生成会让已签发的证书全部作废。
+校验方式:
+
+- `app-release.cer` 是三张证书组成的链(root → CA → leaf),
+  **leaf 的公钥指纹与 `app.csr` 里的一致** ⇒ 证书确实签给了我们这把钥匙;
+- `app-release.p7b` 解出来 `type == release`、`bundle-name == com.sabernotes.saber`、
+  `distribution-certificate` 的公钥指纹与上面那张 leaf 一致;
+- `devices` 字段为空 —— 发布 Profile 没有设备白名单,符合预期。
+
+### 新增工具:`harmony/toolchain/agc/agc_upload.py`
+
+上架流程要在控制台上传 CSR / 证书链,`agc_console.py` 里没有「选文件」的能力,
+所以新加了一个薄脚本(复用 `agc_console.py` 的 CDP 客户端,不改它的既有逻辑):
+
+```bash
+python3 harmony/toolchain/agc/agc_upload.py ohos/signing/app.csr --scope iframe --index 0
+```
+
+**踩到的坑**:nodeId 必须用 `DOM.querySelector` 现查。
+`DOM.getDocument(depth=-1, pierce=True)` 返回的 nodeId 是「过期」的,
+直接拿去 `DOM.setFileInputFiles` 会报 `Could not find node with given id`;
+用 querySelector 查出来的 nodeId 才能用,而且浏览器会自动派发 change 事件。
+
