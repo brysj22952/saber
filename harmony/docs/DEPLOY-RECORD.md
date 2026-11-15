@@ -351,5 +351,15 @@ AGC 给的两条提示:
    `软件版本号:1.0.0(1000000)` ✓。不要被这个按钮骗去反复选包 ✓。
 8. **版本选取弹窗里没有 radio 列**,点「文件名称」那一格才会选中(下方会展开该包的
    包名/默认名/SHA256 等详情),再点「确认选取」✓。
-9. **Python 侧 CDP 小坑**:`Runtime.evaluate` 不带 `contextId` 会落在**顶层文档**而不是 iframe,
+9. **版本在审核中时「去选择」按钮是禁用的**(选不了包)—— 也就是说审核期间不会误改包 ✓;
+   同理「保存草稿」也别再点,会把已提交的版本数据搅乱 ✓。
+10. **软件包管理里会躺着之前上传失败的包**:`saber-release.app`(2026-11-15 16:50,
+   合法性「不通过(996)」)—— 那次是把 `.hap` 改名成 `.app` 的失败尝试。
+    它不影响上架(状态是「不可选」),下次需要清理时在控制台删掉即可 ✓。
+11. **Python 侧 CDP 小坑**:`Runtime.evaluate` 不带 `contextId` 会落在**顶层文档**而不是 iframe,
    取 iframe 里的元素要显式传 `contextId`;`Runtime.evaluate` 想要 DOM 节点引用要 `returnByValue=False` ✓。
+12. **iframe 路由切换后隔离世界会被重建**,`agc_console.Frame` 里缓存的 `ctx` 失效,
+   `Runtime.evaluate` 会静默返回空 —— 切页面后要**重新建一个 `Frame`** 再读 ✓。
+13. **`agc_console.py` 连的是 `/json/list` 的第一个标签页**。控制台里若同时开着别的应用页面,
+    轮询脚本会读到**别的应用**的状态 —— 所以 `agc_version_status.py` 里加了
+    「页面上必须出现 `com.sabernotes.saber` 才作数」的校验 ✓。
