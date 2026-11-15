@@ -332,6 +332,21 @@ AGC 给的两条提示:
 接下来等华为侧人工审核(通常 1–7 个工作日)。状态变化时用上面那条命令查,
 并把结论写进 [`APP-RELEASE-RECORD.md`](APP-RELEASE-RECORD.md)。
 
+### 等待审核期间的补充验证
+
+- **提交包与商店文案一致**:解开 `ohos-default-signed.app` → 内层 HAP 的 `module.json`,
+  `requestPermissions` 只有 `ohos.permission.INTERNET` 一项 ✓,
+  与商店「权限说明」文案逐条对得上 ✓(权限说明与实际不符是最常见的驳回理由之一)。
+- **商店素材合规**:4 张截图全部 2353×1324、严格 16:9、PNG ✓,满足「3~10 张 / 长边≥1920 / 比例 16:9」。
+- **真机冒烟**(审核期间在平板上跑了一次,只启动自己的 App,没动别的应用):
+  `aa start -a EntryAbility -b com.sabernotes.saber` → 「start ability successfully」,
+  进程存活 ✓,`XComFlutterEngine` 正常起来 ✓,hilog 里**没有 FATAL/崩溃** ✓
+  (只有 `FeatureManager get config failed`、`APP_NAP not in system exemption list` 这类常规告警;
+  后者是因为 App 没在前台 ✓)。
+  > 注:平板上装的是**调试包**(与提交包的 Dart 代码一致,只差 AOT 与签名);
+  > **不要**在有个人笔记的设备上装发布包 —— 调试包与发布包签名不同,同包名只能先卸载,
+  > 卸载会连带删掉本地笔记 ✓。
+
 ### 这一阶段踩到的坑(AGC 控制台是 Vue SPA,只能靠 CDP 驱动)
 
 1. **`.app` 不能改名**:`.hap` 改名成 `.app` → `996 软件包解析失败`。见阶段 2 ✓。
