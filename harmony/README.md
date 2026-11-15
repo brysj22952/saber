@@ -33,6 +33,7 @@ hdc shell aa start -a EntryAbility -b com.sabernotes.saber
 - Windows 本机专版:[harmony/docs/BUILD-LOCAL.md](docs/BUILD-LOCAL.md)
 - **用户使用说明书**:[harmony/docs/manual/Saber-鸿蒙版使用手册.md](docs/manual/Saber-鸿蒙版使用手册.md)
 - 合并回上游的策略:[harmony/docs/ohos-upstream.md](docs/ohos-upstream.md)
+- **上架华为应用市场**:[harmony/docs/RELEASE-TO-APPGALLERY.md](docs/RELEASE-TO-APPGALLERY.md)(分阶段任务书,给云端 DSH 执行)
 
 ---
 
@@ -47,10 +48,12 @@ harmony/
 │   ├── ohos.md                  完整适配指南(环境/签名/构建/装机/排障)
 │   ├── ohos-upstream.md         怎么把这套东西合并回上游主干
 │   ├── BUILD-LOCAL.md           Windows 本机构建(不需要 Linux 构建机)
+│   ├── DEPLOY-RECORD.md         真机部署记录(改了什么、踩了什么坑)
+│   ├── RELEASE-TO-APPGALLERY.md 上架华为应用市场的阶段化任务书
 │   └── manual/                  用户使用说明书
 │       ├── Saber-鸿蒙版使用手册.md
 │       ├── img/                 15 张真机标注图
-│       ├── shots/               31 张原始截图(配图的输入素材)
+│       ├── shots/               32 张原始截图(配图的输入素材)
 │       └── tools/               生成配图的脚本(跨平台)
 │
 ├── packages/                    ← 鸿蒙专用的 Dart 包
@@ -84,10 +87,15 @@ harmony/
     ├── dist/                    给终端用户的安装脚本
     │
     │   ── Windows 专属 ───────────────────────────────────────────────
-    └── windows/
-        ├── setup_sdk.ps1             把 SDK 侧的准备串成一步(幂等)
-        ├── patch_flutter_tools_symlink.py  没开发者模式时容忍符号链接失败
-        └── align_const_finder.py    对齐 const_finder 快照的 SDK hash
+    ├── windows/
+    │   ├── setup_sdk.ps1             把 SDK 侧的准备串成一步(幂等)
+    │   ├── patch_flutter_tools_symlink.py  没开发者模式时容忍符号链接失败
+    │   └── align_const_finder.py    对齐 const_finder 快照的 SDK hash
+    │
+    │   ── AGC 控制台 ─────────────────────────────────────────────────
+    └── agc/
+        ├── agc_console.py          用 CDP 驱动 AGC 控制台(加设备 / 下载 profile)
+        └── README.md               用法
 ```
 
 > **为什么要分「跨平台 / Linux 专属 / Windows 专属」三层?**
