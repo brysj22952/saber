@@ -462,6 +462,19 @@ AGC 给的两条提示:
 - 版本号收敛成单一来源:`harmony/scripts/build_ohos.sh` 里 `APP_VERSION_NAME`/`APP_VERSION_CODE`
   一处定义,同时喂给包元数据和设置页 ✓,以后不会再漂 ✓。
 
+### 平板(MatePad Edge,10.0.0.4)上的应用被卸掉了 —— 需要时再装回去
+
+- 这次为了做真机冒烟测试,先 `hdc uninstall` 掉了平板上原来那个 **1.37.1/137010** 的调试包,
+  想装新的 **1.0.1/1000001** 验证界面,**没装上** ✗:
+  - release profile(AGC 发布证书)包:`code:9568322 not trusted app source` —— 发布包本来就不给旁加载 ✗
+  - 换成 AGC 的 **调试 profile**(`saber_debug_profile`,白名单里有 2 台设备)重新打的 debug 包:
+    同样报 9568322 ✗ —— 平板的 UDID 很可能不在那个 profile 的白名单里(设备重置过?)✗
+- 现在平板上**没有** Saber。要装回去有两条路:
+  1. 用 `harmony/toolchain/agc/` 从控制台把平板的 UDID 加进调试 profile 的设备列表,
+     重新下载 profile 再 `bash harmony/scripts/build_ohos.sh --debug` 打 debug 包安装 ✓;
+  2. 或者用「我的应用市场 → 调试」把刚提交的 1.0.1 装到设备上(走 AGC 的可信来源通道 ✓)。
+- 商店截图(`harmony/docs/store-screenshots/`)已经拍好 ✓,不受影响 ✓。
+
 ### 当前状态
 
 - 版本:**1.0.1 (1000001)**,状态 **预审中**(2026-11-16 20:39 提交 ✓)
