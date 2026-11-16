@@ -493,24 +493,28 @@ AGC 给的两条提示:
    **平板的 UDID 就在里面** ✓ → 白名单没问题。
 2. 平板 UDID 用 `hdc shell bm get --udid` 读到(文档 §4.5.1 里记的方法 ✓),
    设备自报 `const.product.devicetype = tablet`。
-3. 再看签名材料,发现三个「公钥」:
-   | 东西 | 公钥 md5 前 10 位 |
+3. 再看签名材料,把「证书」和「公钥」分开看 —— 之前一直把 `.cer` 文件里的
+   **第一张**(根 CA)当成了这张证书本身,得把叶子(最后一张)单独拎出来比:
+   | 东西 | 叶子证书的公钥 md5 前 10 位 |
    |---|---|
    | `app.p12` 私钥对应的证书 | `5b7d1f894f` |
-   | 调试 Profile 引用的证书 | `5b7d1f894f` |
-   | 发布 Profile 引用的证书 | `5b7d1f894f` |
-   | `app.cer`(控制台下载的「发布证书」) | `7690a822a9` |
-   → **`app.cer` 是另一把钥匙的证书** ✗。AGC 的「自动签名」流程里,Profile 引用的是
-   **本地密钥库那张证书**(AGC 为它签发的 Development 证书),
-   而控制台下载的「发布证书」是另外一把钥匙(没有对应私钥)✗。
-4. 原来的 `build_chain()` 直接拿 `app.cer` 当证书链 → 装到设备上时
-   设备验签对不上 → `code:9568322 not trusted app source` ✗。
+   | 调试 Profile 引用的证书(…Development) | `5b7d1f894f` |
+   | 发布 Profile 引用的证书(…Release) | `5b7d1f894f` |
+   | 控制台另一张自动签名证书 | `4a7cb3b249` |
+   → 公钥都是同一把 ✓,**但 Development 和 Release 是两张不同的证书** ✗ ✗。
+4. 原来的 `build_chain()` 直接拿 `app.cer` 当证书链,而 `app.cer` 的叶子是
+   **Release 证书** ✗ —— 调试 Profile 要的是 Development 证书 ✗ ✗。
+   设备是拿 Profile 指定的那张证书去核对包里的证书链,对不上 →
+   `code:9568322 not trusted app source` ✗。
 
 修法:
 
 * `harmony/toolchain/prepare_signing.py` 改成:**按公钥比对**,
-  profile 引用的证书与 `app.p12` 是同一把钥匙时,直接用 profile 里那张证书当叶子,
-  再拼上 `app.cer` 里的两级华为 CA,组成完整链 ✓。
+  profile 引用的证书与 `app.p12` 是同一把钥匙时,以 profile 里那张证书为叶子,
+  再拼上 `app.cer` 里的两级华为 CA(顺序跟 AGC 导出的 `.cer` 一致:根→中间→叶子,
+  hvigor 才认)✓。
+* `harmony/scripts/build_ohos.sh` 加了一道保险:构建前检查 Profile 类型,
+  `--app`(上架包)配上调试 Profile 直接报错停下 ✓。
 * 只重签(秒级,不用重新构建):用 `hap-sign-tool sign-app` 签
   `ohos/entry/build/default/outputs/default/entry-default-unsigned.hap` ✓
   (`verify-app` 验过:包里的 profile 与 `ohos/signing/app.p7b` 的 md5 完全一致 ✓)。

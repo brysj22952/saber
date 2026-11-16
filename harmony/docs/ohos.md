@@ -663,29 +663,38 @@ make sure the UDID of your device is configured in the signing profile
 | `11010001 ... storePassword ... less than 32` | 密码没加密 | 走 `use_agc_signing.sh`,别手填明文 |
 | 安装报「签名证书不匹配」 | `.p7b` 里的 Bundle Name 与应用实际包名不一致 | 两边都要改成同一个 |
 | `code:9568393` / `code:9568423` | Profile 没包含这台设备的 UDID | 见 §4.5.1:AGC 里加设备 →「编辑设备」勾选 → 重新下载 `.p7b` → 重签装机 |
-| `code:9568322 not trusted app source` | **证书链和 Profile 对不上**:链里放的是控制台下载的「发布证书」,而 Profile 引用的是另一张(自动签名时是本地密钥库那张) | `prepare_signing.py` 已改成**按公钥比对**:Profile 引用的证书与 `app.p12` 是同一把钥匙时,用 Profile 里那张证书当叶子,再拼上两级华为 CA。详见 §4.5.2 |
+| `code:9568322 not trusted app source` | **证书链的叶子不是 Profile 引用的那张证书**(同公钥、不同证书也算对不上) | 证书链的叶子必须正好是 Profile 里引用的那张证书。详见 §4.5.2 |
 | `failed to verify pkcs7 file` | 证书链顺序/内容不对 | 确认 `certpath` 是链且 PEM 格式正确 |
 
-### 4.5.2 证书链必须和 Profile 引用的是同一张证书
+### 4.5.2 证书链的叶子必须正好是 Profile 引用的那张证书
 
-AGC 的「自动签名」流程里,同一个账号会有好几张证书:
+AGC 上同一个账号会有好几张证书,它们**公钥可能相同、但不是同一张证书**:
 
-| 证书 | 公钥 | 用在哪 |
+| 证书 | 公钥 | 被谁引用 |
 |---|---|---|
 | 本地密钥库 `app.p12` 里的证书 | `5b7d…` | 真正用来签名的私钥 |
-| Profile 里引用的证书(Development) | `5b7d…` ← **同一把钥匙** | 调试 Profile / 发布 Profile 都引用它 |
-| 控制台「证书」页下载的「发布证书」 | `7690…` ← **另一把钥匙** | 和本地私钥不配套 |
+| 调试 Profile 引用的证书(…Development) | `5b7d…` ← 同一把钥匙 | `saber_debug_profile` |
+| 发布 Profile 引用的证书(…Release) | `5b7d…` ← 同一把钥匙 | `saber_release_profile` |
+| 控制台「证书」页里另外两张(自动签名/其它用途) | `4a7c…` 等 | 别的流程用 |
 
-如果把「发布证书」当证书链去签名,装到真机上一定报
-`code:9568322 not trusted app source` —— 设备拿 Profile 里的证书去验签,对不上。
+坑在:**用发布证书去签调试包会报 `code:9568322 not trusted app source`**。
+签名本身没错(私钥是对的),但设备是拿 **Profile 里指定的那张证书**去核对包里的证书链,
+对不上就认为来源不可信。所以:
+
+* 调试包 → 链的叶子用 **Development 证书**;
+* 上架包 → 链的叶子用 **Release 证书**;
+* 链的**顺序**按 AGC 导出的 `.cer`:根 CA → 中间 CA → 叶子(hvigor 才认)。
 
 `prepare_signing.py` 现在会:
 
 1. 从 `app.p12` 导出证书;
-2. 从 `.p7b` 里取出 Profile 引用的证书;
-3. 比对两者的**公钥**是否相同;
-4. 相同 → 用 Profile 那张证书作叶子,拼上 `app.cer` 里的两级华为 CA;
+2. 从 `.p7b` 里取出 Profile 引用的那张证书;
+3. 比对两者的**公钥**是否相同(不同就不能用了);
+4. 相同 → 以 Profile 那张证书为叶子,拼上 `app.cer` 里的两级华为 CA;
    不同 → 回退到 `app.cer`,并打 `[warn]`。
+
+`build_ohos.sh` 还有一道保险:构建前检查 Profile 类型,
+`--app`(上架包)配调试 Profile 会直接报错停下,免得把调试签名的包传到应用市场。
 
 验签对不对,签完核一下:
 

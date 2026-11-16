@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """准备签名材料,并把配置写进 ohos/build-profile.json5(两个平台共用)。
 
 三条路径,按优先级自动判断:
@@ -189,15 +189,24 @@ def profile_cert(p7b: pathlib.Path) -> str:
             pass
 
 
-def build_chain(cer: pathlib.Path, chain: pathlib.Path):
-    """AGC 下载的 .cer 可能是完整证书链,也可能是只有一张叶子证书。"""
+def build_chain(cer: pathlib.Path, chain: pathlib.Path, leaf: str = ""):
+    """组装证书链,顺序跟 AGC 导出的 .cer 一致:根 CA → 中间 CA → 叶子。
+
+    leaf 留空时用 cer 里的最后一张;需要指定时传 profile 引用的那张证书
+    (调试 profile 引 Development 证书、发布 profile 引 Release 证书,
+    两张证书公钥相同但不是同一张,叶子对不上设备会报 9568322)。
+    """
     text = cer.read_text(encoding="utf-8", errors="replace")
-    count = len(certs_from_pem(text))
-    if count >= 2:
-        shutil.copyfile(cer, chain)
-        print(f"    app.cer 含 {count} 张证书,直接作为证书链")
+    certs = re.findall(
+        r"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----", text, re.S
+    )
+    if len(certs) >= 2:
+        cas = certs[:-1]
+        tail = leaf.strip() if leaf.strip() else certs[-1]
+        chain.write_text("\n".join(cas + [tail]) + "\n", encoding="utf-8")
+        print(f"    证书链: {len(cas)} 张 CA + 1 张叶子")
         return
-    print(f"    [warn] app.cer 只有 {count} 张证书,尝试自动补上级 CA")
+    print(f"    [warn] app.cer 只有 {len(certs)} 张证书,尝试自动补上级 CA")
     rc = subprocess.call(
         [sys.executable, str(TOOLCHAIN / "complete_cert_chain.py"), str(cer), str(chain)]
     )
@@ -293,17 +302,15 @@ def main() -> int:
         hex_pwd = encrypt_password(args.password)
         print(f"    storePassword/keyPassword = {hex_pwd[:24]}... ({len(hex_pwd)} chars)")
         print("==> 4/5 组装证书链")
-        # AGC 的 profile 里引用的证书,必须和签名用的私钥(app.p12)配套。
-        # 自动签名场景下,profile 引用的是密钥库自己那张证书,
-        # 而 app.cer(控制台下载的「发布证书」)可能是另一张 —— 用错会导致
-        # 设备端报 code:9568322 "not trusted app source",装不上。
+        # AGC 的 profile 里引用的证书,必须和签名用的私钥(app.p12)配套,
+        # 而且证书链的叶子必须正好是 profile 引用的那张证书:
+        # 调试 profile 引的是 Development 证书、发布 profile 引的是 Release 证书,
+        # 两者公钥相同但是两张不同的证书。叶子对不上,设备端会报
+        # code:9568322 "not trusted app source",装不上。
         p12_cert = cert_from_p12(p12, args.password)
         prof_cert = profile_cert(p7b)
         if p12_cert and prof_cert and same_public_key(p12_cert, prof_cert):
-            # profile 里那张证书与我们的私钥是同一把钥匙(AGC 为它签的),
-            # 用它当证书链,签名才能和 profile 对上。
-            chain.write_text(prof_cert, encoding="utf-8")
-            print("    证书链取自 profile 引用的证书(与密钥库私钥配套)")
+            build_chain(cer, chain, leaf=prof_cert)
         else:
             build_chain(cer, chain)
             if p12_cert and prof_cert:

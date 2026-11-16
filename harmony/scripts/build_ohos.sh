@@ -117,6 +117,35 @@ echo "==> 3/6 准备签名材料 + 写入 build-profile.json5"
 #   * 什么都没有               -> 现场生成社区证书
 bash "$TOOLCHAIN_DIR/prepare_signing.sh"
 
+# 保险:profile 的类型必须和构建类型对得上。
+#   调试 Profile(development-certificate)不能用来打上架包,
+#   发布 Profile(distribution-certificate)不能用来装真机做调试。
+# 对不上就直接停下,免得把调试签名的包传到应用市场。
+PROFILE="$REPO_ROOT/ohos/signing/app.p7b"
+if [ -f "$PROFILE" ]; then
+    PROFILE_TYPE=$(openssl smime -verify -noverify -in "$PROFILE" -inform DER 2>/dev/null \
+        | grep -o '"distribution-certificate"\|"development-certificate"' | head -1)
+    case "$PROFILE_TYPE" in
+        '"distribution-certificate"')
+            [ "$BUILD_MODE" = "debug" ] && {
+                echo "!! ohos/signing/app.p7b 是【发布 Profile】,不能用来做 debug 构建。" >&2
+                echo "   调试请换回调试 Profile;要上架请用 --release。" >&2
+                exit 1
+            }
+            echo "--> 使用发布 Profile(distribution-certificate)"
+            ;;
+        '"development-certificate"')
+            [ "$BUILD_MODE" != "debug" ] && [ "$BUILD_TARGET" = "app" ] && {
+                echo "!! ohos/signing/app.p7b 是【调试 Profile】,不能用来打上架用的 .app 包。" >&2
+                echo "   上架请换成发布 Profile(AGC -> Profile -> 下载发布 Profile);" >&2
+                echo "   本地装真机调试则用调试 Profile。" >&2
+                exit 1
+            }
+            echo "--> 使用调试 Profile(development-certificate)"
+            ;;
+    esac
+fi
+
 echo "==> 4/6 构建 $BUILD_TARGET ($BUILD_MODE)"
 # OHOS: 本工程用 --target-os=linux 编 AOT(见 harmony/docs/ohos.md §4.9),
 # 这会让 Platform.isLinux 变成编译期常量 true,框架会把鸿蒙误判成桌面 Linux。
