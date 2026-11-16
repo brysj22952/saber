@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import pathlib
@@ -111,7 +112,84 @@ def der_of(pem: str) -> bytes:
     return base64.b64decode(body)
 
 
-def build_chain(cer: pathlib.Path, chain: pathlib.Path) -> None:
+def same_public_key(cert_a: str, cert_b: str) -> bool:
+    """比较两张证书的公钥是否相同(AGC 的自动签名证书与密钥库里的证书常是同一把钥匙)。"""
+    openssl = find_openssl()
+    if not openssl:
+        return False
+    import tempfile as _tf
+    for cert in (cert_a, cert_b):
+        with _tf.NamedTemporaryFile(suffix=".pem", delete=False, mode="w") as tmp:
+            tmp.write(cert)
+            path = tmp.name
+        try:
+            out = subprocess.run(
+                [openssl, "x509", "-pubkey", "-noout", "-in", path],
+                capture_output=True, text=True, check=False,
+            )
+            if out.returncode != 0:
+                return False
+            digest = hashlib.sha256(out.stdout.encode()).hexdigest()
+            if cert is cert_a:
+                first = digest
+            else:
+                return first == digest
+        finally:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+    return False
+
+
+def cert_from_p12(p12: pathlib.Path, password: str) -> str:
+    """从密钥库里导出证书(PEM 文本)。失败返回空串。"""
+    openssl = find_openssl()
+    if not openssl:
+        return ""
+    for extra in (["-legacy"], []):
+        out = subprocess.run(
+            [openssl, "pkcs12", "-in", str(p12), "-nokeys", "-passin", f"pass:{password}", *extra],
+            capture_output=True, text=True, check=False,
+        )
+        # openssl 的输出前面会带一段 "Bag Attributes",证书在后面
+        m = re.search(r"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----", out.stdout, re.S)
+        if m:
+            return m.group(0) + "\n"
+    return ""
+
+
+def profile_cert(p7b: pathlib.Path) -> str:
+    """从 profile(.p7b) 里取出它引用的那张证书(PEM 文本)。"""
+    openssl = find_openssl()
+    if not openssl:
+        return ""
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
+        payload = tmp.name
+    try:
+        subprocess.run(
+            [openssl, "smime", "-verify", "-noverify", "-in", str(p7b),
+             "-inform", "DER", "-out", payload],
+            capture_output=True, check=False,
+        )
+        if not os.path.exists(payload) or os.path.getsize(payload) == 0:
+            return ""
+        prof = json.loads(pathlib.Path(payload).read_text(encoding="utf-8"))
+        bi = prof.get("bundle-info", {})
+        for field in ("development-certificate", "distribution-certificate"):
+            if field in bi:
+                return bi[field]
+        return ""
+    except (ValueError, KeyError, OSError):
+        return ""
+    finally:
+        try:
+            os.unlink(payload)
+        except OSError:
+            pass
+
+
+def build_chain(cer: pathlib.Path, chain: pathlib.Path):
     """AGC 下载的 .cer 可能是完整证书链,也可能是只有一张叶子证书。"""
     text = cer.read_text(encoding="utf-8", errors="replace")
     count = len(certs_from_pem(text))
@@ -215,7 +293,21 @@ def main() -> int:
         hex_pwd = encrypt_password(args.password)
         print(f"    storePassword/keyPassword = {hex_pwd[:24]}... ({len(hex_pwd)} chars)")
         print("==> 4/5 组装证书链")
-        build_chain(cer, chain)
+        # AGC 的 profile 里引用的证书,必须和签名用的私钥(app.p12)配套。
+        # 自动签名场景下,profile 引用的是密钥库自己那张证书,
+        # 而 app.cer(控制台下载的「发布证书」)可能是另一张 —— 用错会导致
+        # 设备端报 code:9568322 "not trusted app source",装不上。
+        p12_cert = cert_from_p12(p12, args.password)
+        prof_cert = profile_cert(p7b)
+        if p12_cert and prof_cert and same_public_key(p12_cert, prof_cert):
+            # profile 里那张证书与我们的私钥是同一把钥匙(AGC 为它签的),
+            # 用它当证书链,签名才能和 profile 对上。
+            chain.write_text(prof_cert, encoding="utf-8")
+            print("    证书链取自 profile 引用的证书(与密钥库私钥配套)")
+        else:
+            build_chain(cer, chain)
+            if p12_cert and prof_cert:
+                print("    [warn] profile 引用的证书与密钥库里的证书不是同一把钥匙,已回退到 app.cer")
         print("==> 4.5/5 校验 profile 与证书是否匹配")
         check_profile(p7b, chain)
         print("==> 5/5 改写 build-profile.json5")

@@ -475,6 +475,43 @@ AGC 给的两条提示:
   2. 或者用「我的应用市场 → 调试」把刚提交的 1.0.1 装到设备上(走 AGC 的可信来源通道 ✓)。
 - 商店截图(`harmony/docs/store-screenshots/`)已经拍好 ✓,不受影响 ✓。
 
+### 2026-11-16 深夜:真机装不上的根因 = 证书链用错了(不是设备类型、也不是签名)
+
+排查过程:
+
+1. 先怀疑「设备不在调试 Profile 白名单」→ 读 `saber_debug_profile` 的 `debug-info.device-ids`,
+   **平板的 UDID 就在里面** ✓ → 白名单没问题。
+2. 平板 UDID 用 `hdc shell bm get --udid` 读到(文档 §4.5.1 里记的方法 ✓),
+   设备自报 `const.product.devicetype = tablet`。
+3. 再看签名材料,发现三个「公钥」:
+   | 东西 | 公钥 md5 前 10 位 |
+   |---|---|
+   | `app.p12` 私钥对应的证书 | `5b7d1f894f` |
+   | 调试 Profile 引用的证书 | `5b7d1f894f` |
+   | 发布 Profile 引用的证书 | `5b7d1f894f` |
+   | `app.cer`(控制台下载的「发布证书」) | `7690a822a9` |
+   → **`app.cer` 是另一把钥匙的证书** ✗。AGC 的「自动签名」流程里,Profile 引用的是
+   **本地密钥库那张证书**(AGC 为它签发的 Development 证书),
+   而控制台下载的「发布证书」是另外一把钥匙(没有对应私钥)✗。
+4. 原来的 `build_chain()` 直接拿 `app.cer` 当证书链 → 装到设备上时
+   设备验签对不上 → `code:9568322 not trusted app source` ✗。
+
+修法:
+
+* `harmony/toolchain/prepare_signing.py` 改成:**按公钥比对**,
+  profile 引用的证书与 `app.p12` 是同一把钥匙时,直接用 profile 里那张证书当叶子,
+  再拼上 `app.cer` 里的两级华为 CA,组成完整链 ✓。
+* 只重签(秒级,不用重新构建):用 `hap-sign-tool sign-app` 签
+  `ohos/entry/build/default/outputs/default/entry-default-unsigned.hap` ✓
+  (`verify-app` 验过:包里的 profile 与 `ohos/signing/app.p7b` 的 md5 完全一致 ✓)。
+
+### 控制台里把平板的设备类型改成「平板」
+
+* AGC「开发者管理 → 设备」里 MatePad Edge 那条原本登记成「**手机**」✗,
+  已删掉重加为「**MatePad Edge / 平板**」✓(先要在 Profile 里解除关联才能删 ✓)。
+* 调试 Profile 的白名单随之调整过一轮:先摘掉平板 → 删设备行 → 以「平板」重新添加 →
+  再在 Profile「编辑设备」里勾回去 → 重新下载 Profile ✓(现在白名单是手机 + 平板两台 ✓)。
+
 ### 当前状态
 
 - 版本:**1.0.1 (1000001)**,状态 **预审中**(2026-11-16 20:39 提交 ✓)
