@@ -56,6 +56,46 @@ def find_cdp_port(default=9333):
     raise SystemExit("找不到可用的 CDP 端口(默认 9333)")
 
 
+def _click_sidebar(f, label, exact=True):
+    """点顶层文档侧栏里的某一项;点不到返回 False。"""
+    if exact:
+        expr = (
+            "(() => {const el=[...document.querySelectorAll('.item-text')]"
+            ".find(e=>e.innerText.trim()==='%s'); if(el){el.click(); return 1;} return 0;})()"
+        ) % label
+    else:
+        expr = (
+            "(() => {const el=[...document.querySelectorAll('.item-text')]"
+            ".find(e=>e.innerText.trim().includes('%s')); if(el){el.click(); return 1;} return 0;})()"
+        ) % label
+    return bool(f.c.eval(expr))
+
+
+def _click_top_nav(f, label):
+    """点顶栏(不是侧栏)里的某一项,例如「应用管理」。"""
+    expr = (
+        "(() => {const els=[...document.querySelectorAll('a,li,span,div')]"
+        ".filter(e=>e.children.length===0&&(e.innerText||'').trim()==='%s');"
+        " if(!els.length) return 0; els[0].click(); return 1;})()"
+    ) % label
+    return bool(f.c.eval(expr))
+
+
+def _open_version_page(f, port):
+    """回到「应用 → 版本/升级」页。
+
+    浏览器可能停在项目级页面(侧栏是「总览/证书/Profile/…」,没有「版本/升级」),
+    这时点顶栏的「应用管理」——它会直接进到最近打开的那个应用,再点侧栏的「版本/升级」。
+    """
+    if _click_sidebar(f, "版本/升级"):
+        return
+    if _click_top_nav(f, "应用管理"):
+        time.sleep(10)
+        f.close()
+        f = Frame(port)
+    _click_sidebar(f, "版本/升级")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=None)
@@ -80,10 +120,7 @@ def main():
             # 点完如果没读到包名(页面没切过来 / 有人同时在操作控制台),再点一次;
             # 还是会话被重定向到「华为 APIs 使用协议」这类页面,就把整个控制台重载一次。
             for attempt in range(3):
-                f.c.eval(
-                    "(() => {const el=[...document.querySelectorAll('.item-text')]"
-                    ".find(e=>e.innerText.trim()==='版本/升级'); if(el){el.click(); return 1;} return 0;})()"
-                )
+                _open_version_page(f, port)
                 time.sleep(9)
                 # 路由切换后 iframe 的隔离世界会被重建,旧 ctx 失效 ⇒ 重新建一个 Frame
                 f.close()

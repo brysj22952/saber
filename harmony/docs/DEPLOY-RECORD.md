@@ -429,7 +429,14 @@ AGC 给的两条提示:
 18. **应用信息页的改动不点「保存」就等于没改**:改完名称/图标直接切页签或刷新,改动会丢 ✗。
     两个设备页签(手机 / PC/2in1)各有一份图标,要分别上传 ✓;「保存」按钮在有改动时才可用 ✓。
 19. **版本页的「保存草稿」慎用** —— 它会把已选取的软件包清掉 ✗;改完直接「提交审核」即可 ✓。
-20. **`ohos/build-profile.json5` 是「模板」文件**:仓库里存的是空口令版本,
+20. **上游的 golden 测试在这台机器上跑不了**:仓库用的 Flutter SDK 是 OHOS 专用版,
+    `flutter test` 会以 `Abi._os: ohos` 去编译 FFI 代码,`flutter_tester` 直接崩
+    (`Type IntPtr has no mapping for ABI ... ohos/arm`)。
+    所以 `test/goldens/login_page_*.png` **这次没能重新生成** ——
+    登录页的界面变了(多了隐私复选框),golden 与上游不一致,
+    要在有桌面版 Flutter SDK 的机器上跑 `flutter test --update-goldens` 才能补上 ✓。
+    (不影响鸿蒙构建与上架 ✓ —— 商店截图是另外用真机截的 ✓。)
+21. **`ohos/build-profile.json5` 是「模板」文件**:仓库里存的是空口令版本,
     `prepare_signing.sh` 构建时会往里写本地密钥库的加密口令 ✗。
     这个文件是**被 git 跟踪的**(`git add -A` 会把口令一起提交 ✗✗),
     每次提交前要 `git checkout -- ohos/build-profile.json5` 还原 ✓。
