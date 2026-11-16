@@ -469,7 +469,17 @@ AGC 给的两条提示:
   - release profile(AGC 发布证书)包:`code:9568322 not trusted app source` —— 发布包本来就不给旁加载 ✗
   - 换成 AGC 的 **调试 profile**(`saber_debug_profile`,白名单里有 2 台设备)重新打的 debug 包:
     同样报 9568322 ✗ —— 平板的 UDID 很可能不在那个 profile 的白名单里(设备重置过?)✗
-- 现在平板上**没有** Saber。要装回去有两条路:
+- **2026-11-16 23:32 已解决并装回平板** ✓:根因是证书链用错(见上面的「证书链用错了」一节),
+  修好后 `hdc install` 报 `install bundle successfully` ✓,启动器里应用名已是
+  「**Saber 手写笔记**」 ✓。
+- 剩下的事:平板有**锁屏密码**,`aa start` 会被系统拒绝(错误码 10106102,
+  developer 模式下无法用 hdc 自动解锁),所以界面级自检要等明天解锁后跑:
+  ```bash
+  python3 harmony/toolchain/verify_device_ui.py --connect
+  ```
+  它会检查:新名称 ✓ / 版本号 1.0.1+1000001 ✓ / 「主题类型」已隐藏 ✓ /
+  登录页的隐私复选框 ✓ / 未勾选时登录按钮禁用 ✓。
+- 另外两条路(备选):
   1. 用 `harmony/toolchain/agc/` 从控制台把平板的 UDID 加进调试 profile 的设备列表,
      重新下载 profile 再 `bash harmony/scripts/build_ohos.sh --debug` 打 debug 包安装 ✓;
   2. 或者用「我的应用市场 → 调试」把刚提交的 1.0.1 装到设备上(走 AGC 的可信来源通道 ✓)。
@@ -504,6 +514,13 @@ AGC 给的两条提示:
 * 只重签(秒级,不用重新构建):用 `hap-sign-tool sign-app` 签
   `ohos/entry/build/default/outputs/default/entry-default-unsigned.hap` ✓
   (`verify-app` 验过:包里的 profile 与 `ohos/signing/app.p7b` 的 md5 完全一致 ✓)。
+
+### 明天(设备解锁后)要做的事
+
+1. 平板解锁后跑 `python3 harmony/toolchain/verify_device_ui.py --connect` ✓。
+2. 审核状态:轮询器每 5 分钟查一次(`/tmp/agc_poll.log` ✓),
+   1.0.1 当前是「正在等待审核」 ✓。
+3. 若被驳回,按审核报告逐条整改 → 版本号 +1 → 重新构建 `.app` → 上传 → 提交。
 
 ### 控制台里把平板的设备类型改成「平板」
 

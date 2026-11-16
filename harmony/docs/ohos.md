@@ -663,7 +663,38 @@ make sure the UDID of your device is configured in the signing profile
 | `11010001 ... storePassword ... less than 32` | 密码没加密 | 走 `use_agc_signing.sh`,别手填明文 |
 | 安装报「签名证书不匹配」 | `.p7b` 里的 Bundle Name 与应用实际包名不一致 | 两边都要改成同一个 |
 | `code:9568393` / `code:9568423` | Profile 没包含这台设备的 UDID | 见 §4.5.1:AGC 里加设备 →「编辑设备」勾选 → 重新下载 `.p7b` → 重签装机 |
+| `code:9568322 not trusted app source` | **证书链和 Profile 对不上**:链里放的是控制台下载的「发布证书」,而 Profile 引用的是另一张(自动签名时是本地密钥库那张) | `prepare_signing.py` 已改成**按公钥比对**:Profile 引用的证书与 `app.p12` 是同一把钥匙时,用 Profile 里那张证书当叶子,再拼上两级华为 CA。详见 §4.5.2 |
 | `failed to verify pkcs7 file` | 证书链顺序/内容不对 | 确认 `certpath` 是链且 PEM 格式正确 |
+
+### 4.5.2 证书链必须和 Profile 引用的是同一张证书
+
+AGC 的「自动签名」流程里,同一个账号会有好几张证书:
+
+| 证书 | 公钥 | 用在哪 |
+|---|---|---|
+| 本地密钥库 `app.p12` 里的证书 | `5b7d…` | 真正用来签名的私钥 |
+| Profile 里引用的证书(Development) | `5b7d…` ← **同一把钥匙** | 调试 Profile / 发布 Profile 都引用它 |
+| 控制台「证书」页下载的「发布证书」 | `7690…` ← **另一把钥匙** | 和本地私钥不配套 |
+
+如果把「发布证书」当证书链去签名,装到真机上一定报
+`code:9568322 not trusted app source` —— 设备拿 Profile 里的证书去验签,对不上。
+
+`prepare_signing.py` 现在会:
+
+1. 从 `app.p12` 导出证书;
+2. 从 `.p7b` 里取出 Profile 引用的证书;
+3. 比对两者的**公钥**是否相同;
+4. 相同 → 用 Profile 那张证书作叶子,拼上 `app.cer` 里的两级华为 CA;
+   不同 → 回退到 `app.cer`,并打 `[warn]`。
+
+验签对不对,签完核一下:
+
+```bash
+java -jar <SDK>/openharmony/toolchains/lib/hap-sign-tool.jar verify-app \
+  -inFile build/ohos/hap/entry-default-signed.hap \
+  -outCertChain out-chain.cer -outProfile out-profile.p7b
+# out-profile.p7b 和 ohos/signing/app.p7b 的 md5 应该完全一致
+```
 
 ### 4.8 上架前的检查项
 
