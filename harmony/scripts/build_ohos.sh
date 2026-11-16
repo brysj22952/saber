@@ -23,14 +23,32 @@ REPO_ROOT="$(pwd)"
 source "$REPO_ROOT/harmony/toolchain/common.sh"
 
 BUILD_MODE="release"
+BUILD_TARGET="hap"
 for arg in "$@"; do
   case "$arg" in
     --debug)   BUILD_MODE="debug" ;;
     --profile) BUILD_MODE="profile" ;;
     --release) BUILD_MODE="release" ;;
+    --app)     BUILD_TARGET="app" ;;   # 打应用市场要用的 .app 包
     *) echo "未知参数: $arg"; exit 1 ;;
   esac
 done
+
+# ---------------------------------------------------------------------------
+# 版本号:单一来源。
+#
+# 华为应用市场的审核员会在「设置」页看到版本号,也会在商店里看到版本号,
+# 两者必须一致。上游 Dart 里写死的是 1.37.1+137010(buildName/buildNumber),
+# 而商店线用的是 1.0.0+1000000 —— 以前两套号各走各的,审核被打回过。
+#
+# 这里把同一个值同时喂给:
+#   * --build-name / --build-number  -> 写进 ohos/AppScope/app.json5(包元数据)
+#   * --dart-define=APP_VERSION_*    -> 设置页显示(lib/components/settings/app_info.dart)
+#
+# 升级版本:改下面两个默认值(或用环境变量覆盖),三处显示就都是同一个号。
+# ---------------------------------------------------------------------------
+APP_VERSION_NAME="${APP_VERSION_NAME:-1.0.1}"
+APP_VERSION_CODE="${APP_VERSION_CODE:-1000001}"
 
 # release/profile 需要 AOT,依赖 toolchain 侧的 Wine 版 gen_snapshot。
 # 详见 harmony/docs/ohos.md §4.9。
@@ -99,16 +117,22 @@ echo "==> 3/6 准备签名材料 + 写入 build-profile.json5"
 #   * 什么都没有               -> 现场生成社区证书
 bash "$TOOLCHAIN_DIR/prepare_signing.sh"
 
-echo "==> 4/6 构建 HAP ($BUILD_MODE)"
+echo "==> 4/6 构建 $BUILD_TARGET ($BUILD_MODE)"
 # OHOS: 本工程用 --target-os=linux 编 AOT(见 harmony/docs/ohos.md §4.9),
 # 这会让 Platform.isLinux 变成编译期常量 true,框架会把鸿蒙误判成桌面 Linux。
 # 这个 dart-define 打开 harmony/toolchain/patch_ohos_aot_platform.py 加的开关,
 # 强制把 defaultTargetPlatform 判为 ohos。对鸿蒙构建始终是正确的。
-flutter build hap --"$BUILD_MODE" \
+flutter build "$BUILD_TARGET" --"$BUILD_MODE" \
+  --build-name="$APP_VERSION_NAME" \
+  --build-number="$APP_VERSION_CODE" \
+  --dart-define=APP_VERSION_NAME="$APP_VERSION_NAME" \
+  --dart-define=APP_VERSION_CODE="$APP_VERSION_CODE" \
   --dart-define=FLUTTER_OHOS_AOT_BUILD=true
 
+echo "==> 版本号: $APP_VERSION_NAME ($APP_VERSION_CODE)"
+
 echo "==> 5/6 完成"
-find build/ohos -name "*.hap" -exec ls -lh {} \;
+find build/ohos \( -name "*.hap" -o -name "*.app" \) -exec ls -lh {} \;
 
 cat <<'EOF'
 

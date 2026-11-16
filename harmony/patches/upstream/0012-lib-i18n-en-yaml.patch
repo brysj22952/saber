@@ -1,0 +1,24 @@
+diff --git a/lib/i18n/en.i18n.yaml b/lib/i18n/en.i18n.yaml
+index 02b738d8..b59277ec 100644
+--- a/lib/i18n/en.i18n.yaml
++++ b/lib/i18n/en.i18n.yaml
+@@ -22,6 +22,7 @@ home:
+     importNote: Import note
+   welcome: Welcome to Saber
+   invalidFormat: The file you selected is not supported. Please select an sbn, sbn2, sba, or pdf file.
++  pdfImportUnsupported: Importing PDF files is not supported on this platform yet.
+   noFiles: No files found
+   noPreviewAvailable: No preview available
+   createNewNote: Tap the + button to create a new note
+@@ -189,6 +190,11 @@ login:
+   title: Login
+   form:
+     agreeToPrivacyPolicy(rich): By logging in, you agree to the ${linkToPrivacyPolicy(Privacy Policy)}.
++    iAgreeToPrivacyPolicy(rich): I have read and agree to the ${linkToPrivacyPolicy(Privacy Policy)}
++    disagreeAndExit: Don't agree, exit
++    disagreeDialogTitle: Privacy policy not accepted
++    disagreeDialogMessage: You must agree to the privacy policy before using Saber's Nextcloud sync. Do you want to exit the app?
++    exitApp: Exit app
+   signup(rich): Don't have an account yet? ${linkToSignup(Sign up now)}!
+   notYou(rich): Not you? ${undoLogin(Choose another account)}.
+   status:

@@ -1,0 +1,32 @@
+diff --git a/lib/i18n/strings_zh_Hans_CN.g.dart b/lib/i18n/strings_zh_Hans_CN.g.dart
+index 3eb1c018..f40fc780 100644
+--- a/lib/i18n/strings_zh_Hans_CN.g.dart
++++ b/lib/i18n/strings_zh_Hans_CN.g.dart
+@@ -71,6 +71,7 @@ class Translations$home$zh_Hans_CN extends Translations$home$en {
+ 	@override late final Translations$home$create$zh_Hans_CN create = Translations$home$create$zh_Hans_CN.internal(_root);
+ 	@override String get welcome => '欢迎使用 Saber';
+ 	@override String get invalidFormat => '不支持该文件。请选择 .sbn、.sbn2、.sba 或 .pdf 文件。';
++	@override String get pdfImportUnsupported => '当前平台暂不支持导入 PDF 文件。';
+ 	@override String get noFiles => '未找到文件';
+ 	@override String get noPreviewAvailable => '无可用预览';
+ 	@override String get createNewNote => '点击 + 按钮新建一个笔记';
+@@ -558,6 +559,19 @@ class Translations$login$form$zh_Hans_CN extends Translations$login$form$en {
+ 		linkToPrivacyPolicy('隐私政策'),
+ 		const TextSpan(text: '。'),
+ 	]);
++
++	@override TextSpan iAgreeToPrivacyPolicy({required InlineSpanBuilder linkToPrivacyPolicy}) => TextSpan(children: [
++		const TextSpan(text: '我已阅读并同意 '),
++		linkToPrivacyPolicy('《隐私政策》'),
++	]);
++
++	@override String get disagreeAndExit => '不同意并退出';
++
++	@override String get disagreeDialogTitle => '未同意隐私政策';
++
++	@override String get disagreeDialogMessage => '您需要同意隐私政策才能使用 Saber 的 Nextcloud 同步功能。是否退出应用?';
++
++	@override String get exitApp => '退出应用';
+ }
+ 
+ // Path: login.status

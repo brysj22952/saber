@@ -1,0 +1,39 @@
+diff --git a/lib/i18n/strings_en.g.dart b/lib/i18n/strings_en.g.dart
+index ee9dcf9e..443c0e42 100644
+--- a/lib/i18n/strings_en.g.dart
++++ b/lib/i18n/strings_en.g.dart
+@@ -84,6 +84,9 @@ class Translations$home$en {
+ 	/// en: 'The file you selected is not supported. Please select an sbn, sbn2, sba, or pdf file.'
+ 	String get invalidFormat => 'The file you selected is not supported. Please select an sbn, sbn2, sba, or pdf file.';
+ 
++	/// en: 'Importing PDF files is not supported on this platform yet.'
++	String get pdfImportUnsupported => 'Importing PDF files is not supported on this platform yet.';
++
+ 	/// en: 'No files found'
+ 	String get noFiles => 'No files found';
+ 
+@@ -885,6 +888,24 @@ class Translations$login$form$en {
+ 		linkToPrivacyPolicy('Privacy Policy'),
+ 		const TextSpan(text: '.'),
+ 	]);
++
++	/// en: 'I have read and agree to the ${linkToPrivacyPolicy(Privacy Policy)}'
++	TextSpan iAgreeToPrivacyPolicy({required InlineSpanBuilder linkToPrivacyPolicy}) => TextSpan(children: [
++		const TextSpan(text: 'I have read and agree to the '),
++		linkToPrivacyPolicy('Privacy Policy'),
++	]);
++
++	/// en: 'Don't agree, exit'
++	String get disagreeAndExit => 'Don\'t agree, exit';
++
++	/// en: 'Privacy policy not accepted'
++	String get disagreeDialogTitle => 'Privacy policy not accepted';
++
++	/// en: 'You must agree to the privacy policy before using Saber's Nextcloud sync. Do you want to exit the app?'
++	String get disagreeDialogMessage => 'You must agree to the privacy policy before using Saber\'s Nextcloud sync. Do you want to exit the app?';
++
++	/// en: 'Exit app'
++	String get exitApp => 'Exit app';
+ }
+ 
+ // Path: login.status

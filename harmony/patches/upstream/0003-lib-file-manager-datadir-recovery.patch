@@ -1,5 +1,5 @@
 diff --git a/lib/data/file_manager/file_manager.dart b/lib/data/file_manager/file_manager.dart
-index 74b1e8f..a539d0f 100644
+index 74b1e8fd..ab190984 100644
 --- a/lib/data/file_manager/file_manager.dart
 +++ b/lib/data/file_manager/file_manager.dart
 @@ -13,6 +13,7 @@ import 'package:path/path.dart' as p;
@@ -64,3 +64,28 @@ index 74b1e8f..a539d0f 100644
    static Future<String> getDocumentsDirectory() async =>
        stows.customDataDir.value ?? await getDefaultDocumentsDirectory();
  
+@@ -860,6 +902,24 @@ class FileManager {
+         if (file == mainFile) continue;
+ 
+         final extension = file.name.split('.').last;
++
++        // 笔记的缩略图(预览图)。少了它,导入的笔记在首页就是「无可用预览」。
++        if (extension == 'p') {
++          final previewBytes = () {
++            final output = OutputMemoryStream();
++            file.writeContent(output);
++            return output.getBytes();
++          }();
++          writeFutures.add(
++            writeFile(
++              '$importedPath$mainFileExtension.p',
++              previewBytes,
++              awaitWrite: awaitWrite,
++            ),
++          );
++          continue;
++        }
++
+         final assetNumber = int.tryParse(extension);
+         if (assetNumber == null) continue;
+         if (assetNumber < 0) continue;

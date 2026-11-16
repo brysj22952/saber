@@ -69,6 +69,7 @@ def main():
     args = ap.parse_args()
 
     port = args.port or find_cdp_port()
+    sidebar = ""
     f = Frame(port)
     try:
         if args.url:
@@ -104,6 +105,14 @@ def main():
         if "状态" not in (text or ""):
             time.sleep(10)
             text = f.ev("(() => document.body.innerText.replace(/\\s+/g, ' '))()") or ""
+        # 版本列表在顶层文档的侧栏里(形如 "1.0.1 预审中"),
+        # 一个应用可能有多个历史版本,只有版本号最大的那个才是当前要盯的。
+        sidebar = f.c.eval(
+            """(() => [...document.querySelectorAll('.item-text')]
+                 .map(e => (e.innerText || '').trim())
+                 .filter(t => /^\\d+\\.\\d+\\.\\d+/.test(t))
+                 .join('\\n'))()"""
+        ) or ""
     finally:
         f.close()
 
@@ -116,6 +125,31 @@ def main():
         print("状态: 跳过(页面上没有包名 %s,可能连到了别的标签页)" % args.bundle)
         return
 
+    # 版本号最大的那条 = 当前版本(旧版本还留在列表里,不能只看第一个)
+    latest = None
+    for line in (sidebar or "").split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        mv = re.match(r"^(\d+\.\d+\.\d+)\s*(.*)$", line)
+        if not mv:
+            continue
+        key = tuple(int(x) for x in mv.group(1).split("."))
+        if latest is None or key > latest[0]:
+            latest = (key, mv.group(1), mv.group(2).strip())
+
+    if latest:
+        print("版本: %s" % latest[1])
+        status = latest[2]
+        if status:
+            print("状态: %s" % status)
+        else:
+            print("状态: 未识别(侧栏里该版本没有状态词)")
+        if "不通过" in status:
+            print("提示: 状态含「不通过」,点「检测报告」按报告修复后重新提交")
+        return
+
+    # 侧栏没读到就退回整页文本匹配
     found = [s for s in STATUS_PATTERNS if s in text]
     m = re.search(r"状态：\s*([^\s]+)", text)
     if m:

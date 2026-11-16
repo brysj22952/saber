@@ -241,7 +241,7 @@ PY
 
 | 材料 | 从哪来 | 要求 |
 |---|---|---|
-| 应用图标 | `assets/icon/icon.png` | **已是 1024×1024 PNG**(已验证),直接可用 |
+| 应用图标 | `harmony/assets/app-icon-1024.png` | 1024×1024 PNG,**无 alpha 通道**(华为要求不透明);由 `harmony/toolchain/make_app_icon.py` 生成,与包内 `ohos/**/media/*.png` 同源 |
 | 手机截图 | **要补拍** | ≥3 张:首页、编辑器、新建笔记菜单。可以用 `hdc` 截图:`hdc shell snapshot_display -f /data/local/tmp/s.jpeg` + `hdc file recv` |
 | 平板截图 | `harmony/docs/manual/img/*.png` | 已有 15 张(标注图),挑 3–5 张干净的 |
 | 隐私政策 | 新写 + GitHub Pages | §4.2 |

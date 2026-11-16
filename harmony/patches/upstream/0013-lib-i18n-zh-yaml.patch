@@ -1,0 +1,24 @@
+diff --git a/lib/i18n/zh-Hans-CN.i18n.yaml b/lib/i18n/zh-Hans-CN.i18n.yaml
+index 8f157000..c9734040 100644
+--- a/lib/i18n/zh-Hans-CN.i18n.yaml
++++ b/lib/i18n/zh-Hans-CN.i18n.yaml
+@@ -22,6 +22,7 @@ home:
+     importNote: 导入笔记
+   welcome: 欢迎使用 Saber
+   invalidFormat: 不支持该文件。请选择 .sbn、.sbn2、.sba 或 .pdf 文件。
++  pdfImportUnsupported: 当前平台暂不支持导入 PDF 文件。
+   noFiles: 未找到文件
+   noPreviewAvailable: 无可用预览
+   createNewNote: 点击 + 按钮新建一个笔记
+@@ -189,6 +190,11 @@ login:
+   title: 登录
+   form:
+     agreeToPrivacyPolicy(rich): 登录即表示您同意 ${linkToPrivacyPolicy(隐私政策)}。
++    iAgreeToPrivacyPolicy(rich): 我已阅读并同意 ${linkToPrivacyPolicy(《隐私政策》)}
++    disagreeAndExit: 不同意并退出
++    disagreeDialogTitle: 未同意隐私政策
++    disagreeDialogMessage: 您需要同意隐私政策才能使用 Saber 的 Nextcloud 同步功能。是否退出应用?
++    exitApp: 退出应用
+   signup(rich): 还没有帐户？ ${linkToSignup(立即注册)}！
+   notYou(rich): 不是您吗？${undoLogin(Choose another account)}.
+   status:
