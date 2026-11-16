@@ -519,6 +519,24 @@ AGC 给的两条提示:
   `ohos/entry/build/default/outputs/default/entry-default-unsigned.hap` ✓
   (`verify-app` 验过:包里的 profile 与 `ohos/signing/app.p7b` 的 md5 完全一致 ✓)。
 
+### 2026-11-17 06:32 真机界面自检:7/7 全部通过
+
+平板解锁后跑 `python3 harmony/toolchain/verify_device_ui.py --connect` ✓,
+逐项结果:
+
+| 检查项 | 结果 | 实测到的界面文字 |
+|---|---|---|
+| 应用标题显示新名称 | ✅ | `Saber 手写笔记` |
+| 版本号是 1.0.1 | ✅ | 设置页 `v1.0.1 (1000001)` |
+| 版本号是 1000001 | ✅ | 同上 |
+| 「主题类型」已隐藏 | ✅ | 设置页只有「应用主题/系统·浅色·深色」 |
+| 登录页有隐私复选框 | ✅ | `我已阅读并同意《隐私政策》` |
+| 有「不同意并退出」 | ✅ | 登录页左下角 |
+| 未勾选时登录按钮禁用 | ✅ | 「使用 Saber 登录」「使用 Nextcloud 登录」均为 disabled |
+
+即第 1 轮审核意见里与界面相关的 3 项(改应用名、版本号显示错误、隐私政策勾选框)
+在真机上都已经落实 ✓。
+
 ### 明天(设备解锁后)要做的事
 
 1. 平板解锁后跑 `python3 harmony/toolchain/verify_device_ui.py --connect` ✓。
