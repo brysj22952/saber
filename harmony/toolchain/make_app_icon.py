@@ -37,6 +37,10 @@
 
 所以:商店图标保持 1024(商店要求),包内图标改成 512×512 RGB,
 两者的画面内容完全一致(同一张图缩放而来),但包内不再带 alpha 通道。
+
+另外,包内那份**不是重新画一遍 512**,而是把商店那张 1024 用 LANCZOS 缩到 512 ——
+这样包内图标与商店上传的那张图是**逐像素可验证的同一张**(审核员比对两个图标时
+不会有任何差异),而不是「同一段代码画的相似图」。
 """
 import os
 
@@ -156,8 +160,11 @@ def main():
     store.save(store_path, "PNG")
     print(f"✓ {store_path} (1024x1024, RGB 无 alpha,商店上传用)")
 
-    # 包内用:512×512 RGB —— restool 对 ≤512 的图原样拷贝,不会转码出 alpha 通道
-    packaged = draw_icon(512)
+    # 包内用:把这张 1024 原图 LANCZOS 缩到 512 —— 不是重新画一遍。
+    # 两个好处:
+    #   * restool 对 ≤512 的图原样拷贝,不会转码出 alpha 通道;
+    #   * 包内图标与商店上传的那张是「同一张图」,逐像素可验证一致。
+    packaged = store.resize((512, 512), Image.LANCZOS)
     assert packaged.mode == "RGB", packaged.mode
     for path in [
         os.path.join(ROOT, "ohos", "entry", "src", "main", "resources", "base", "media", "icon.png"),
@@ -165,7 +172,7 @@ def main():
     ]:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         packaged.save(path, "PNG")
-        print(f"✓ {path} (512x512, RGB 无 alpha,包内)")
+        print(f"✓ {path} (512x512, RGB 无 alpha,包内;= 商店图标的 LANCZOS 缩放)")
 
 
 if __name__ == "__main__":
