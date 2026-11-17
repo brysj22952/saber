@@ -798,3 +798,21 @@ packaged = store_1024.resize((512, 512), Image.LANCZOS)
 
 校验:两份 PDF 的 xref 偏移全部指向正确的 `N 0 obj`,页数与行数符合预期,
 中文页墨迹占比 8.09%(不是空白页),文字未溢出页面。
+
+### 2026-11-18 第 4 轮:批量改应用内文案的做法(可复用)
+
+要在上游 i18n 文件里批量改文案,注意三件事:
+
+1. **改 `.i18n.yaml` 也要改生成的 `.g.dart`** —— 后者才是编译进包的,
+   而且里面的单引号是**转义**的(`Saber\'s`)。旧串是转义形式时,新串也必须
+   转义,否则 Dart 语法错误。本轮第一版就踩了这个坑:
+   `'Open the 'Saber' data folder…'` → 构建报 `Variables must be declared…`。
+2. **改完重新生成上游补丁**(`git diff --abbrev=7 -- <file> > harmony/patches/upstream/00xx-*.patch`),
+   上游文件本身仍然不入库;顺手做一次**往返验证**:
+   `git checkout` 回上游 → `apply_upstream_patches.sh` → 与手工改完的文件逐字节一致。
+3. **Dart AOT 快照里中文是 UTF-16** —— 在 `libapp.so` 里按 UTF-8 搜中文串会
+   全部搜不到,会误判成「没编进去」。验证要同时试 UTF-8 和 UTF-16LE。
+
+工具:`harmony/toolchain/rename_ui_strings.py`(带 `--check` 干跑模式),
+它同时负责中英文两套的 yaml + 生成的 .g.dart,并显式区分「该改的」和
+「必须保留上游的」(版权声明、服务器上的数据文件夹名)。
