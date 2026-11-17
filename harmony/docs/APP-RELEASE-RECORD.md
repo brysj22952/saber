@@ -190,9 +190,26 @@ AGC 版本历史记录里的时间线:
    | 「分类 / 年龄分级不符」 | 改应用分类标签、重填年龄分级问卷 |
    | 「应用名称与已有应用重复 / 不规范」 | 改应用名(包名 `com.sabernotes.saber` 与上游 Android 版 `com.adilhanney.saber` 不冲突 ✓),同时改 `harmony/docs/store-listing.md` 与商店介绍里的名字 |
    | 「功能与描述不符 / 崩溃」 | 重新构建 `.app` 并**重新上传新版本**(versionCode 递增)再提交 |
+   | 「图标有透明背景 / 与终端图标不一致」 | 包内图标必须是 **512×512 RGB**(restool 对 ≤512 原样拷贝;给 1024 会被转码出 alpha=254),且内容要是商店那张 1024 的**精确缩放**;商店图标用 `harmony/toolchain/make_app_icon.py` 重新生成 |
+   | 「缺资质证明 / 《官方授权书》」 | 把 `harmony/toolchain/make_audit_zip.py` 生成的 zip 传到**两个槽**:版本表单顶部的「审核附件」**和**「版权信息 → 授权书及其他材料」(后者只收 JPG/JPEG/BMP/PDF,所以 zip 里必须有 PDF) |
+   | 「名称/图标与已有应用相似」 | 改名 + 换图标,并**把应用介绍、隐私政策网页、包内 app_name 一起同步**(报告原文的提醒) |
 
 3. 需要改包时:改代码 → `flutter build app --release --build-name=<x> --build-number=<N+1>
    --dart-define=FLUTTER_OHOS_AOT_BUILD=true` → AGC 软件包管理上传新 `.app` → 版本页「去选择」选新包 → 提交审核。
+
+   **发布签名包的完整步骤**(商店包必须用 release Profile 签):
+
+   ```bash
+   cd /root/hzq/saber-ohos/saber
+   cp -f ohos/signing/app-release.p7b ohos/signing/app.p7b      # 换成发布 Profile
+   APP_VERSION_NAME=1.0.3 APP_VERSION_CODE=1000003 bash harmony/scripts/build_ohos.sh --app
+   cp -f /root/hzq/saber-ohos/.signing-backup/app.p7b.debug-20261118 ohos/signing/app.p7b  # 换回调试 Profile
+   python3 harmony/toolchain/verify_app_package.py              # 8 项验收
+   ```
+
+   ⚠️ 版本表单里**离开页面会把「发布版本」重置**,所以顺序要固定:
+   先传包 → 再填表单其它项 → 最后「去选择」选包 → 立即提交。
+   ⚠️ 审核期间不要点「撤销审核」,也不要点「保存草稿」(会清掉已选的包)。
 4. 每一轮结论都追加到本表,并在 [`DEPLOY-RECORD.md`](DEPLOY-RECORD.md) 里补一节细节。
 
 ## 查状态
