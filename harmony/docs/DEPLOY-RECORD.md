@@ -734,3 +734,23 @@ python3 harmony/toolchain/verify_app_package.py
 > 签名块在 `.app` 自己身上,里面的 `entry-default.hap` 是不带签名的。
 > 所以要对 `.app` 跑 `hap-sign-tool verify-app`;对里面的 hap 跑会报
 > `No Hap Signing Block before ZIP Central Directory` ✗。
+
+### 2026-11-18 补充:包内图标改成「商店图标的精确缩放」
+
+上面那版修法是把 `draw_icon(512)`(重新画一遍 512)放进包内。这轮又收紧了一步:
+包内那张现在是**商店那张 1024 原图的 LANCZOS 缩放**,即
+
+```python
+packaged = store_1024.resize((512, 512), Image.LANCZOS)
+```
+
+理由:审核员会拿**控制台/商店的图标**和**终端里装出来的图标**比。
+「第 2 轮」的阻塞意见 1 就是「控制台图标 ≠ 终端安装后的图标」。
+重新画一遍 512 虽然是同一段代码,但边缘抗锯齿与商店那张不完全相同
+(实测最大通道差 70,集中在霓虹描边的高对比像素);
+改成精确缩放后,**差异为 0**,两个图标是逐像素可验证的同一张 ✓。
+
+另外这轮还做了「审核期间的商店页自查」(逐项见
+[`APP-RELEASE-RECORD.md`](APP-RELEASE-RECORD.md) §2026-11-18),
+并修掉一个自查时抓到的不一致:**隐私政策网页还自称「Saber」**,
+而应用已改名「赛博手写笔记」——已改并推 gh-pages,线上生效 ✓。
