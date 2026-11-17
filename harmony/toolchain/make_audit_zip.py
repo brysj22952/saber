@@ -9,13 +9,21 @@
     python3 harmony/toolchain/make_audit_zip.py                # 输出到 /tmp/saber-open-source-audit.zip
     python3 harmony/toolchain/make_audit_zip.py -o /tmp/x.zip
 
-产物(纯文本,不包含任何签名材料):
-    LICENSE              上游 GPL-3.0 协议全文(取自仓库根目录的 LICENSE.md)
-    README-OpenSource.txt  开源说明:上游地址 / 本项目地址 / 授权依据 / 与上游的差异
+产物(不含任何签名材料):
+    GPL-3.0-LICENSE.pdf       上游 GPL-3.0 协议全文(PDF,可直接阅读/打印)
+    开源说明与授权依据.pdf     开源说明(中文,PDF)
+    LICENSE                   上游 GPL-3.0 协议全文(纯文本,取自仓库根目录的 LICENSE.md)
+    README-OpenSource.txt     开源说明(纯文本):上游地址 / 本项目地址 / 授权依据 / 与上游的差异
+
+为什么要 PDF:审核第 3 轮的阻塞意见是「缺《Saber 官方授权书》」,并明确指出
+上传路径是「分发 > 版本信息 > 版权信息」,而那个位置的上传控件说明写着
+「压缩包内支持包含 JPG、JPEG、BMP 格式图片和 **PDF** 格式的文件」。
+所以在原有纯文本之外补两份 PDF,让审核员在版权信息里**当场就能翻到依据**。
 """
 
 import argparse
 import os
+import re
 import zipfile
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -55,6 +63,160 @@ GPL-3.0 第 4、5、6 条明确允许在保留版权声明与许可证的前提�
 """
 
 
+def _pdf_escape(s: str) -> str:
+    return s.replace("\\", r"\\").replace("(", r"\(").replace(")", r"\)")
+
+
+def latin_to_pdf(text: str) -> bytes:
+    """把纯西文文本排成 PDF(内置 Helvetica,不依赖任何外部库)。
+
+    环境里没有 reportlab/fpdf,审核附件却要 PDF,所以这里手写一个最小可用的
+    PDF 生成器:只支持 Helvetica / Helvetica-Bold、WinAnsi 编码、A4 纵向。
+    """
+    # 先把常见的排版字符降成 ASCII,再把非 latin-1 字符替换掉(避免生成非法 PDF)
+    text = (text.replace("→", "->").replace("—", "--").replace("–", "-")
+                .replace("‘", "'").replace("’", "'")
+                .replace("“", '"').replace("”", '"')
+                .replace("©", "(c)").replace("…", "..."))
+    lines: list[str] = []
+    for raw in text.splitlines():
+        raw = raw.encode("latin-1", "replace").decode("latin-1")
+        if len(raw) <= 100:
+            lines.append(raw)
+            continue
+        cur = ""
+        for word in raw.split(" "):
+            if cur and len(cur) + len(word) + 1 > 100:
+                lines.append(cur)
+                cur = word
+            else:
+                cur = (cur + " " + word).strip()
+        lines.append(cur)
+
+    per_page, leading, top, bottom = 62, 13.2, 780, 56
+    pages = [lines[i:i + per_page] for i in range(0, len(lines), per_page)] or [[""]]
+
+    objs: list[bytes] = []
+
+    def add(body: bytes) -> int:
+        objs.append(body)
+        return len(objs)
+
+    font_id = add(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+    bold_id = add(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>")
+    pages_id = len(objs) + 1 + 2 * len(pages)  # 先占位,稍后回填
+
+    page_ids = []
+    for page in pages:
+        stream = ["BT", "/F1 9.5 Tf", f"{leading} TL", f"1 0 0 1 56 {top} Tm"]
+        for ln in page:
+            stream.append(f"({_pdf_escape(ln)}) Tj T*")
+        stream.append("ET")
+        content = "\n".join(stream).encode("latin-1", "replace")
+        cid = add(b"<< /Length " + str(len(content)).encode() + b" >>\nstream\n" + content + b"\nendstream")
+        pid = add(
+            b"<< /Type /Page /Parent " + str(pages_id).encode() + b" 0 R /MediaBox [0 0 595 842]"
+            b" /Resources << /Font << /F1 " + str(font_id).encode() + b" 0 R /F2 " + str(bold_id).encode()
+            + b" 0 R >> >> /Contents " + str(cid).encode() + b" 0 R >>"
+        )
+        page_ids.append(pid)
+
+    kids = b" ".join(str(p).encode() + b" 0 R" for p in page_ids)
+    objs.insert(pages_id - 1, b"<< /Type /Pages /Kids [" + kids + b"] /Count "
+                + str(len(page_ids)).encode() + b" >>")
+    catalog_id = add(b"<< /Type /Catalog /Pages " + str(pages_id).encode() + b" 0 R >>")
+
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for n, body in enumerate(objs, start=1):
+        offsets.append(len(out))
+        out += str(n).encode() + b" 0 obj\n" + body + b"\nendobj\n"
+    xref_pos = len(out)
+    out += b"xref\n0 " + str(len(objs) + 1).encode() + b"\n"
+    out += b"0000000000 65535 f \n"
+    for off in offsets:
+        out += ("%010d 00000 n \n" % off).encode()
+    out += (b"trailer\n<< /Size " + str(len(objs) + 1).encode() + b" /Root " + str(catalog_id).encode()
+            + b" 0 R >>\nstartxref\n" + str(xref_pos).encode() + b"\n%%EOF\n")
+    return bytes(out)
+
+
+def cjk_to_pdf(text: str, path: str) -> None:
+    """把中文文本排成 PDF。
+
+    环境里没有能嵌中文字体的 PDF 库,所以用 PIL 渲染成图再存成 PDF
+    (文字不可检索,但排版正常,审核员看内容没问题)。
+    """
+    from PIL import Image, ImageDraw, ImageFont
+
+    font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+    if not os.path.exists(font_path):
+        font_path = "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc"
+    font = ImageFont.truetype(font_path, 30)
+    title_font = ImageFont.truetype(font_path, 38)
+
+    width, height, margin = 1240, 1754, 90  # A4 @150dpi
+    probe = Image.new("RGB", (10, 10), "white")
+    d0 = ImageDraw.Draw(probe)
+
+    def wrap(txt: str) -> list[str]:
+        out, cur = [], ""
+        for ch in txt:
+            if d0.textlength(cur + ch, font=font) > width - 2 * margin:
+                out.append(cur)
+                cur = ch
+            else:
+                cur += ch
+        out.append(cur)
+        return out
+
+    blocks: list[tuple[str, bool]] = []  # (行, 是否标题)
+    for raw in text.splitlines():
+        if not raw.strip():
+            blocks.append(("", False))
+        elif raw.startswith("赛博手写笔记"):
+            blocks.append((raw, True))
+        else:
+            blocks.extend((ln, False) for ln in wrap(raw))
+
+    pages, cur, y = [], [], margin
+    for line, is_title in blocks:
+        f = title_font if is_title else font
+        lh = 48 if is_title else 42
+        if y + lh > height - margin:
+            pages.append(cur)
+            cur, y = [], margin
+        cur.append((line, is_title))
+        y += lh
+    pages.append(cur)
+
+    images = []
+    for page in pages:
+        img = Image.new("RGB", (width, height), "white")
+        d = ImageDraw.Draw(img)
+        y = margin
+        for line, is_title in page:
+            if line:
+                d.text((margin, y), line, fill="black", font=title_font if is_title else font)
+            y += 48 if is_title else 42
+        images.append(img)
+    images[0].save(path, "PDF", resolution=150.0, save_all=True, append_images=images[1:])
+
+
+def markdown_to_text(md: str) -> str:
+    """把 LICENSE.md 粗略地转成可排版的纯文本。"""
+    out = []
+    for line in md.splitlines():
+        line = re.sub(r"^#{1,6}\s*", "", line)
+        line = line.replace("**", "").replace("`", "")
+        line = re.sub(r"^\|\s*", "", line)
+        line = re.sub(r"\s*\|\s*$", "", line)
+        if re.fullmatch(r"[-=]{3,}", line.strip()):
+            continue
+        out.append(line.rstrip())
+    return "\n".join(out)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-o", "--output", default="/tmp/saber-open-source-audit.zip")
@@ -66,14 +228,25 @@ def main():
     if not os.path.exists(lic):
         raise SystemExit("找不到 LICENSE / LICENSE.md,无法生成授权依据附件")
 
+    with open(lic, encoding="utf-8", errors="replace") as f:
+        gpl_md = f.read()
     readme = README_TEMPLATE.format(upstream=UPSTREAM_URL, own=OWN_REPO_URL, branch=OWN_BRANCH)
+
+    gpl_pdf = latin_to_pdf(markdown_to_text(gpl_md))
+    cjk_pdf_path = "/tmp/opensource-statement.pdf"
+    cjk_to_pdf(readme, cjk_pdf_path)
+    with open(cjk_pdf_path, "rb") as f:
+        cjk_pdf = f.read()
 
     with zipfile.ZipFile(args.output, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(lic, "LICENSE")
         z.writestr("README-OpenSource.txt", readme)
+        z.writestr("GPL-3.0-LICENSE.pdf", gpl_pdf)
+        z.writestr("开源说明与授权依据.pdf", cjk_pdf)
 
     print("已生成:", args.output, os.path.getsize(args.output), "字节")
-    print("内容:", zipfile.ZipFile(args.output).namelist())
+    for info in zipfile.ZipFile(args.output).infolist():
+        print(f"  {info.filename:28} {info.file_size:>8} 字节")
 
 
 if __name__ == "__main__":

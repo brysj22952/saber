@@ -773,3 +773,28 @@ packaged = store_1024.resize((512, 512), Image.LANCZOS)
 把 `label` / `is-required` / `.el-form-item__error` / 显示值一次性读出来;
 注意:`--` 说明该字段是 null;`.el-form-item__error` 里残留的报错可能只是
 **历史脏数据**(如「上架时间不能小于当前时间」),要结合显示值判断,别被吓到。
+
+### 2026-11-18 第 3 轮:读审核报告原文 + 让授权附件带上 PDF
+
+**怎么读审核报告原文**(下轮直接用,不用再摸索):
+
+1. AGC → 应用管理 → 应用 → 侧栏「版本历史记录」;
+2. 表格里「审核意见」列有个 `agc-translation-link` 的「审核报告」,点它会
+   **在同一个标签页**跳到 `…/agc/index.html#/auditReportView`;
+3. 那个页面本身是个壳,真正的报告在它内部的 amp iframe
+   (`…/josp/agc/amp/?…#/auditReport`)里,同源,可以直接 `contentDocument` 读文本;
+4. 报告分「应用信息 / 应用功能 / 知识产权 / 应用资质」四个页签,点页签分别读;
+   文本里的**每条问题都带「问题N:」和「修改建议」**,还有「检测报告生成时间」。
+
+**授权附件现在带 PDF**:审核第 3 轮的「应用资质」意见要《Saber 官方授权书》,
+而控制台那个上传槽(版权信息 → 授权书及其他材料)只收 JPG/JPEG/BMP/PDF。
+原来那个 zip 里是纯文本,所以 `harmony/toolchain/make_audit_zip.py` 现在多产两份 PDF:
+
+* `GPL-3.0-LICENSE.pdf` —— 手写的最小 PDF 生成器(Helvetica/WinAnsi,A4 纵向,
+  11 页,674 行全排进去了;环境里没有 reportlab/fpdf/soffice,自写反而最省事);
+* `开源说明与授权依据.pdf` —— 中文说明用 PIL + Noto Sans CJK 渲染成 PDF
+  (没有能嵌中文字体的 PDF 库,图型 PDF 排版正常、审核员能直接看);
+* 原来的 `LICENSE`、`README-OpenSource.txt` 也留着(审核附件槽已经收过纯文本,留着没坏处)。
+
+校验:两份 PDF 的 xref 偏移全部指向正确的 `N 0 obj`,页数与行数符合预期,
+中文页墨迹占比 8.09%(不是空白页),文字未溢出页面。
