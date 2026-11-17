@@ -15,10 +15,28 @@
 
 用法:
     python3 harmony/toolchain/make_app_icon.py
-    # 产出(全部 1024×1024,RGB 无 alpha):
-    #   harmony/assets/app-icon-1024.png                     商店上传用
-    #   ohos/entry/src/main/resources/base/media/icon.png     包内 ability 图标
-    #   ohos/AppScope/resources/base/media/app_icon.png       包内应用图标(桌面/最近任务)
+    # 产出(全部 RGB 无 alpha):
+    #   harmony/assets/app-icon-1024.png                     1024×1024,商店上传用
+    #   ohos/entry/src/main/resources/base/media/icon.png     512×512,包内 ability 图标
+    #   ohos/AppScope/resources/base/media/app_icon.png       512×512,包内应用图标(桌面/最近任务)
+
+包内为什么用 512 而不是 1024
+-------------------------
+第 1、2 轮审核都被判「图标有透明背景」「商店图标与终端图标不一致」。
+商店侧已经改对(1024×1024 RGB 无 alpha),但**包内**那一份还是被 SDK 改坏了:
+
+* hvigor 的 restool 开着 iconCheck,会把 media 里的图标**归一化到 512×512**;
+* 源图是 1024 时,这一步要缩放,会走 SDK 的图像转码器
+  (libimage_transcoder_shared.so),转码器输出的是 **RGBA 且 alpha=254**
+  的 PNG —— 也就是「每个像素都还带一点透明」,正好撞上审核的「透明背景」;
+* 源图本来就是 ≤512 时,restool **原样拷贝**,不转码 → 输出就是干净的 RGB。
+
+实测(用 SDK 自带的 restool 跑一遍):
+    源图 1024×1024 RGB → 包内 512×512 RGBA(alpha 254)   ✗ 有透明通道
+    源图  512×512 RGB → 包内 512×512 RGB               ✓ 无 alpha 通道
+
+所以:商店图标保持 1024(商店要求),包内图标改成 512×512 RGB,
+两者的画面内容完全一致(同一张图缩放而来),但包内不再带 alpha 通道。
 """
 import os
 
@@ -130,19 +148,24 @@ def draw_icon(size=1024):
 
 
 def main():
-    size = 1024
-    icon = draw_icon(size)
-    assert icon.mode == "RGB", icon.mode
+    # 商店上传用:1024×1024(华为商店的图标规格)
+    store = draw_icon(1024)
+    assert store.mode == "RGB", store.mode
+    store_path = os.path.join(ROOT, "harmony", "assets", "app-icon-1024.png")
+    os.makedirs(os.path.dirname(store_path), exist_ok=True)
+    store.save(store_path, "PNG")
+    print(f"✓ {store_path} (1024x1024, RGB 无 alpha,商店上传用)")
 
-    targets = [
-        os.path.join(ROOT, "harmony", "assets", "app-icon-1024.png"),
+    # 包内用:512×512 RGB —— restool 对 ≤512 的图原样拷贝,不会转码出 alpha 通道
+    packaged = draw_icon(512)
+    assert packaged.mode == "RGB", packaged.mode
+    for path in [
         os.path.join(ROOT, "ohos", "entry", "src", "main", "resources", "base", "media", "icon.png"),
         os.path.join(ROOT, "ohos", "AppScope", "resources", "base", "media", "app_icon.png"),
-    ]
-    for path in targets:
+    ]:
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        icon.save(path, "PNG")
-        print(f"✓ {path} ({size}x{size}, RGB 无 alpha)")
+        packaged.save(path, "PNG")
+        print(f"✓ {path} (512x512, RGB 无 alpha,包内)")
 
 
 if __name__ == "__main__":

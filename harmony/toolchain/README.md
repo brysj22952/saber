@@ -147,6 +147,8 @@ Python / JS 脚本读同名环境变量。
 | `install_agc_cli.sh` | 安装 `@byterm/agc-cli` |
 | `agc_provision.sh` | 用 agc-cli 自动申请证书与 profile |
 | `agc_error.py` | 把 agc CLI 的 JSON 错误翻译成可读的中文提示 |
+| `verify_app_package.py` | **验收上架包**:图标有没有 alpha 通道、签名/profile 对不对、版本号与包名、应用名 |
+| `make_app_icon.py` | 生成应用图标(商店 1024×1024 RGB + 包内 512×512 RGB) |
 
 ### 依赖补丁
 
