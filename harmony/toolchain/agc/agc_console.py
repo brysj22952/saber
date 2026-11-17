@@ -63,7 +63,20 @@ class CDP:
         pages = [p for p in pages if p.get("type") == "page"]
         if not pages:
             raise SystemExit("没有可用的标签页(Chrome 是否带 --remote-debugging-port=%s?)" % port)
-        self.ws = websocket.create_connection(pages[0]["webSocketDebuggerUrl"], timeout=90)
+        # 会话过期时控制台会新开一个华为账号登录页,那个标签排在最前面,
+        # 连上去就只会看到登录框。这里优先挑开发者后台的标签页。
+        def rank(page):
+            url = page.get("url") or ""
+            if "hdc-console" in url:
+                return 0
+            if "developer.huawei.com" in url:
+                return 1
+            if "huawei.com" in url:
+                return 3
+            return 2
+
+        pages.sort(key=rank)
+        self.ws = websocket.create_connection(pages[0]["webSocketDebuggerUrl"], timeout=180)
         self._id = 0
 
     def send(self, method, **params):
@@ -102,7 +115,17 @@ class Frame:
         tree = self.c.send("Page.getFrameTree")
         children = tree["result"]["frameTree"].get("childFrames") or []
         if children:
-            fid = children[0]["frame"]["id"]
+            # 业务内容在 #mainIframeView 里。页面里可能还有别的 iframe
+            # (埋点、登录跳转等),childFrames[0] 不一定是它 —— 挑错了
+            # ev() 就会跑到顶层文档上,查询结果全是空。
+            fid = None
+            for child in children:
+                url = child["frame"].get("url") or ""
+                if "/service/josp/agc/amp" in url or "mainIframeView" in url:
+                    fid = child["frame"]["id"]
+                    break
+            if fid is None:
+                fid = children[0]["frame"]["id"]
             wid = self.c.send("Page.createIsolatedWorld", frameId=fid, worldName="agc",
                                grantUniveralAccess=True)
             self.ctx = wid["result"]["executionContextId"]

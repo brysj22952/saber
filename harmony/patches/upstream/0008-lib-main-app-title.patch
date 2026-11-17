@@ -7,7 +7,7 @@ index 4300b5ef..c43ca904 100644
    @override
    Widget build(BuildContext context) {
 -    return DynamicMaterialApp(title: 'Saber', router: App._router);
-+    return DynamicMaterialApp(title: 'Saber 手写笔记', router: App._router);
++    return DynamicMaterialApp(title: '赛博手写笔记', router: App._router);
    }
  
    @override

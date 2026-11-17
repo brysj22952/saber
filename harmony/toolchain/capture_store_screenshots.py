@@ -28,7 +28,7 @@ APP_TEXTS = ("首页", "全部笔记", "白板", "设置")
 SHOTS = [
     ("home", []),                       # 首页(笔记列表)
     ("fabmenu", ["tap:fab"]),           # 右下角悬浮按钮展开的快捷菜单
-    ("editor", ["tap:firstNote", "stroke"]),  # 手写编辑器(画两笔)
+    ("editor", ["tap:newNote", "stroke"]),  # 手写编辑器(新建笔记后画两笔)
     ("whiteboard", ["tap:白板"]),        # 白板
 ]
 
@@ -202,6 +202,14 @@ def capture(device, out_dir, name, actions):
             cx, cy = (note[0] + note[2]) // 2, (note[1] + note[3]) // 2
             steps.append(f"uitest uiInput click {cx} {cy}")
             steps.append("sleep 5")
+        elif act == "tap:newNote":
+            # 悬浮按钮 → 新建笔记。不依赖设备上已有笔记,
+            # 也不会把用户自己的笔记内容拍进商店截图。
+            cx, cy = fab_center(win)
+            steps.append(f"uitest uiInput click {cx} {cy}")
+            steps.append("sleep 3")
+            steps.append("@find:新建笔记")
+            steps.append("sleep 6")
         elif act == "tap:白板":
             wb = find_text(layout, "白板", win)
             if not wb:
@@ -218,8 +226,29 @@ def capture(device, out_dir, name, actions):
 
     remote = f"/data/local/tmp/shot_{name}.jpeg"
     vremote = f"/data/local/tmp/verify_{name}.json"
+
+    # "@find:xxx" 是运行期的占位:先把之前的动作真的执行到设备上,
+    # 再重新 dump 一次布局,按文字定位再点。整批动作是一个 shell 命令,
+    # 中途要看界面就必须分段执行。
+    resolved = []
+    pending = []
+    for act in steps:
+        if act.startswith("@find:"):
+            if pending:
+                sh(device, "; ".join(pending), timeout=300)
+                pending = []
+            target = act.split(":", 1)[1]
+            cur = dump_layout(device, name + "_find")
+            box = find_text(cur, target, win)
+            if not box:
+                raise SystemExit(f"{name}: 找不到「{target}」入口")
+            pending.append(f"uitest uiInput click {(box[0] + box[2]) // 2} {(box[1] + box[3]) // 2}")
+        else:
+            pending.append(act)
+    resolved = pending
+
     cmd = "; ".join([
-        *steps,
+        *resolved,
         f"uitest dumpLayout -p {vremote}",
         f"snapshot_display -f {remote}",
     ])

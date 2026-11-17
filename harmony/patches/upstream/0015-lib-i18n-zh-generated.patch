@@ -1,10 +1,13 @@
 diff --git a/lib/i18n/strings_zh_Hans_CN.g.dart b/lib/i18n/strings_zh_Hans_CN.g.dart
-index 3eb1c018..f40fc780 100644
+index 3eb1c01..bb1317f 100644
 --- a/lib/i18n/strings_zh_Hans_CN.g.dart
 +++ b/lib/i18n/strings_zh_Hans_CN.g.dart
-@@ -71,6 +71,7 @@ class Translations$home$zh_Hans_CN extends Translations$home$en {
+@@ -69,8 +69,9 @@ class Translations$home$zh_Hans_CN extends Translations$home$en {
+ 	@override late final Translations$home$titles$zh_Hans_CN titles = Translations$home$titles$zh_Hans_CN.internal(_root);
+ 	@override late final Translations$home$tooltips$zh_Hans_CN tooltips = Translations$home$tooltips$zh_Hans_CN.internal(_root);
  	@override late final Translations$home$create$zh_Hans_CN create = Translations$home$create$zh_Hans_CN.internal(_root);
- 	@override String get welcome => '欢迎使用 Saber';
+-	@override String get welcome => '欢迎使用 Saber';
++	@override String get welcome => '欢迎使用赛博手写笔记';
  	@override String get invalidFormat => '不支持该文件。请选择 .sbn、.sbn2、.sba 或 .pdf 文件。';
 +	@override String get pdfImportUnsupported => '当前平台暂不支持导入 PDF 文件。';
  	@override String get noFiles => '未找到文件';

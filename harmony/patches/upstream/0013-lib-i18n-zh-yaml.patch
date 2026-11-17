@@ -1,10 +1,13 @@
 diff --git a/lib/i18n/zh-Hans-CN.i18n.yaml b/lib/i18n/zh-Hans-CN.i18n.yaml
-index 8f157000..c9734040 100644
+index 8f15700..5d1cc78 100644
 --- a/lib/i18n/zh-Hans-CN.i18n.yaml
 +++ b/lib/i18n/zh-Hans-CN.i18n.yaml
-@@ -22,6 +22,7 @@ home:
+@@ -20,8 +20,9 @@ home:
+   create:
+     newNote: 新建笔记
      importNote: 导入笔记
-   welcome: 欢迎使用 Saber
+-  welcome: 欢迎使用 Saber
++  welcome: 欢迎使用赛博手写笔记
    invalidFormat: 不支持该文件。请选择 .sbn、.sbn2、.sba 或 .pdf 文件。
 +  pdfImportUnsupported: 当前平台暂不支持导入 PDF 文件。
    noFiles: 未找到文件

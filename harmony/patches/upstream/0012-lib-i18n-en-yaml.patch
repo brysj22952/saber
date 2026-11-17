@@ -1,10 +1,13 @@
 diff --git a/lib/i18n/en.i18n.yaml b/lib/i18n/en.i18n.yaml
-index 02b738d8..b59277ec 100644
+index 02b738d..4b9ec00 100644
 --- a/lib/i18n/en.i18n.yaml
 +++ b/lib/i18n/en.i18n.yaml
-@@ -22,6 +22,7 @@ home:
+@@ -20,8 +20,9 @@ home:
+   create:
+     newNote: New note
      importNote: Import note
-   welcome: Welcome to Saber
+-  welcome: Welcome to Saber
++  welcome: Welcome to Cyber Notes
    invalidFormat: The file you selected is not supported. Please select an sbn, sbn2, sba, or pdf file.
 +  pdfImportUnsupported: Importing PDF files is not supported on this platform yet.
    noFiles: No files found

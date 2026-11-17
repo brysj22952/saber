@@ -7,7 +7,7 @@ index c7f87071..f47e6fd6 100644
              ),
              const SizedBox(width: 8),
 -            const Text('Saber'),
-+            const Text('Saber 手写笔记'),
++            const Text('赛博手写笔记'),
            ],
          ),
          centerTitle: false,

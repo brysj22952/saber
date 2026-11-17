@@ -47,8 +47,8 @@ done
 #
 # 升级版本:改下面两个默认值(或用环境变量覆盖),三处显示就都是同一个号。
 # ---------------------------------------------------------------------------
-APP_VERSION_NAME="${APP_VERSION_NAME:-1.0.1}"
-APP_VERSION_CODE="${APP_VERSION_CODE:-1000001}"
+APP_VERSION_NAME="${APP_VERSION_NAME:-1.0.2}"
+APP_VERSION_CODE="${APP_VERSION_CODE:-1000002}"
 
 # release/profile 需要 AOT,依赖 toolchain 侧的 Wine 版 gen_snapshot。
 # 详见 harmony/docs/ohos.md §4.9。
