@@ -232,8 +232,20 @@ print("与外层 profile 一致:", inner == outer)
 PY
 ```
 
-**验收**:包内 profile 的 `type` 是 `release` 且与发布 profile 完全一致;
-`build/ohos/hap/entry-default-signed.hap` 存在且 ~37–40MB。
+**验收**:跑这个脚本,全绿才算过:
+
+```bash
+python3 harmony/toolchain/verify_app_package.py
+```
+
+它会检查:包内图标**没有 alpha 通道**(第 1、2 轮的阻塞项)、签名有效、
+包内 profile 是 `release` 且与 `ohos/signing/app-release.p7b` 一致、
+版本号/包名/应用名对不对。
+
+> ⚠️ **签名在 `.app` 上,不在里面的 hap 上**:上架包是**整包签名**(app-level),
+> 签名块在 `.app` 自己身上,里面的 `entry-default.hap` 不带签名。
+> 所以要 `hap-sign-tool verify-app` 对 `.app` 跑,对 hap 跑会报
+> `No Hap Signing Block before ZIP Central Directory` ✗。
 
 > 顺带:把旧的调试包备份走,别覆盖掉还能装平板/手机的那个。
 
@@ -241,7 +253,7 @@ PY
 
 | 材料 | 从哪来 | 要求 |
 |---|---|---|
-| 应用图标 | `harmony/assets/app-icon-1024.png` | 1024×1024 PNG,**无 alpha 通道**(华为要求不透明);由 `harmony/toolchain/make_app_icon.py` 生成,与包内 `ohos/**/media/*.png` 同源 |
+| 应用图标 | `harmony/assets/app-icon-1024.png` | 1024×1024 PNG,**无 alpha 通道**(华为要求不透明);由 `harmony/toolchain/make_app_icon.py` 生成。包内 `ohos/**/media/*.png` 是**同一张图缩到 512×512 的 RGB**(画面内容一致),**不要**再放 1024 进包内 —— 见 [DEPLOY-RECORD.md](DEPLOY-RECORD.md) §2026-11-18「包内图标的 alpha 通道」 |
 | 手机截图 | **要补拍** | ≥3 张:首页、编辑器、新建笔记菜单。可以用 `hdc` 截图:`hdc shell snapshot_display -f /data/local/tmp/s.jpeg` + `hdc file recv` |
 | 平板截图 | `harmony/docs/manual/img/*.png` | 已有 15 张(标注图),挑 3–5 张干净的 |
 | 隐私政策 | 新写 + GitHub Pages | §4.2 |

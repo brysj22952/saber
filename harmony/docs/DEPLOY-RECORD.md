@@ -625,3 +625,112 @@ AGC 给的两条提示:
 - 备用:后台已用**发布 Profile** 重打了一个 **1.0.3 (1000003)** 的 `.app`,
   万一 1.0.2 因包内图标(512×512 RGBA,alpha=254)被退回,直接上传它再提交即可 ✓
 - 平板(MatePad Edge)上测试用的空白笔记已清空 ✓(应用停掉后删的 `*.sbn2` / `*.sbn2.p`)
+
+## 2026-11-18:查清「包内图标的 alpha 通道」——上一版备用包其实没修好
+
+> 起因:1.0.2 在人工审核队列里等着,上一轮留了个「万一 1.0.2 因包内图标被退回,
+> 直接上传 1.0.3 备用包」的底。核对备用包时发现**它带着同一个毛病**,
+> 也就是说:1.0.2 真要因为图标被退回,那个底是救不了命的。
+
+### 现象
+
+包里 `resources/base/media/{app_icon,icon}.png` 是 **512×512 RGBA**,
+而且 **alpha 全场都是 254**(不是 255):
+
+```python
+im = Image.open(pkg_icon)
+im.mode            # RGBA
+im.getchannel('A').getextrema()   # (254, 254)  <- 每个像素都"还差一点"不透明
+```
+
+「上传的图标有透明背景」正是第 1、2 轮审核都判过的**阻塞项**。
+商店侧早就改对了(`harmony/assets/app-icon-1024.png` 是 1024×1024 **RGB 无 alpha**),
+但**包内**这一份一直被 SDK 改坏。
+
+### 根因:restool 的 iconCheck 会把大图缩到 512,缩放过程会带出 alpha
+
+* hvigor 的 `process-resource` 任务开着 `iconCheck`,restool 会把 media 里的
+  应用图标**归一化到 512×512**(启动器规范尺寸);
+* 源图是 **1024** 时这一步要缩放,走 SDK 的图像转码器
+  (`libimage_transcoder_shared.so`,`opt-compression.json` 里的 `extensionPath`),
+  转码器输出的是 **RGBA、alpha=254** 的 PNG;
+* 源图本来就是 **≤512** 时,restool **原样拷贝**,根本不转码 → 输出是干净的 RGB。
+
+用 SDK 自带的 restool 直接跑一遍(不改任何工程文件)验证:
+
+| 源图 | 包内产物 | 结论 |
+|---|---|---|
+| 1024×1024 RGB | 512×512 **RGBA**(alpha=254) | ✗ 带透明通道 |
+| 512×512 RGB | 512×512 **RGB** | ✓ 无 alpha 通道 |
+
+> 手动跑 restool 时要带上 SDK 的库路径,否则会报
+> `Failed to load the library .../libimage_transcoder_shared.so, libjsoncpp.so: cannot open shared object file`:
+>
+> ```bash
+> SDK=<deveco-tools>/command-line-tools/sdk/default
+> LD_LIBRARY_PATH="$SDK/hms/toolchains/lib:$SDK/hms/previewer/common/bin:$SDK/openharmony/previewer/common/bin" \
+>   $SDK/openharmony/toolchains/restool -l <resConfig.json>
+> ```
+>
+> (工程构建里 hvigor 自己会设好这个路径,不用手工加。)
+
+### 修法:包内图标改成 512×512 RGB,商店图标保持 1024
+
+* `harmony/toolchain/make_app_icon.py` 现在产出两份:
+  * `harmony/assets/app-icon-1024.png` → **1024×1024 RGB**,商店上传用(商店规格就是 1024);
+  * `ohos/AppScope/resources/base/media/app_icon.png` 与
+    `ohos/entry/src/main/resources/base/media/icon.png` → **512×512 RGB**,包内用;
+* 两张是**同一张图**(同一段绘制代码),只是分辨率不同,画面内容完全一致 ——
+  审核员在商店页和终端上看到的仍是同一个图标;
+* 包内那份不再有 alpha 通道,「透明背景」这条就没了;
+* 顺带把 1.0.1 时代的 **144×144** 也一并解决了(第 2 轮的建议项)。
+
+### 顺带修的另一个坑:两个轮询器抢同一个浏览器标签页
+
+`/tmp/agc_poll.sh`(11-15 起)与 `harmony/toolchain/agc/agc_poll_review.sh`(11-16 起)
+**同时在跑**,两个都往 `/tmp/agc_poll.log` 追加,于是:
+
+* 日志里两条计数交错(`第379次` / `第344次` 混在一起),没法看;
+* 两个脚本都用 CDP 驱动**同一个浏览器标签页**去读版本页,互相把 iframe 导航掉,
+  于是大量轮询结果是「跳过(页面上没有包名 com.sabernotes.saber,可能连到了别的标签页)」——
+  **轮询等于白跑**,真出状态变化反而可能看不到。
+
+处理:停掉 `/tmp/agc_poll.sh`,只留仓库里那个 `agc_poll_review.sh`(有文档、有退出条件)。
+之后再要起轮询,先 `pgrep -f agc_poll` 确认没有别的在跑。
+
+### 当前状态(2026-11-18 07:05)
+
+- **1.0.2 (1000002)**:仍在**正在等待审核**(人工审核,1–7 个工作日);
+  轮询正常,最近几次都是干净的「版本: 1.0.2 / 状态: 正在等待审核」✓
+- **备用包 1.0.3 (1000003)**:已用**发布 Profile** + 修好的 512 图标重新构建完成 ✓
+  (产物 `build/ohos/app/ohos-default-signed.app`,同时也在 `ohos/build/outputs/default/`),
+  验收结果见下。
+- 构建前把 `ohos/signing/app.p7b` 换成了发布 Profile(`app-release.p7b`),
+  **构建完已经换回调试 Profile**(`type == debug`),否则装真机会报「Profile 类型不匹配」。
+
+### 验收清单(备用包)—— 全部通过 ✓
+
+新增了一个验收脚本,以后每个上架包都跑一遍:
+
+```bash
+python3 harmony/toolchain/verify_app_package.py
+```
+
+1.0.3 (1000003) 的实测结果:
+
+```
+=== build/ohos/app/ohos-default-signed.app (16.55 MB) ===
+  ✅ resources/base/media/icon.png 512×512 RGB,无 alpha 通道
+  ✅ resources/base/media/app_icon.png 512×512 RGB,无 alpha 通道
+  ✅ 包名 com.sabernotes.saber
+  ✅ 版本 versionName=1.0.3 versionCode=1000003
+  ✅ 包内能找到应用名「赛博手写笔记」
+  ✅ 签名校验通过(hap-sign-tool verify-app)
+  ✅ 包内 profile 类型 = release(发布 Profile)
+  ✅ 包内 profile 与 ohos/signing/app-release.p7b 完全一致
+```
+
+> **签名在 .app 上,不在里面的 hap 上** —— 上架包是**整包签名**(app-level),
+> 签名块在 `.app` 自己身上,里面的 `entry-default.hap` 是不带签名的。
+> 所以要对 `.app` 跑 `hap-sign-tool verify-app`;对里面的 hap 跑会报
+> `No Hap Signing Block before ZIP Central Directory` ✗。
