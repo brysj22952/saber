@@ -64,6 +64,16 @@ python3 harmony/toolchain/verify_app_package.py   # 期望:10 项通过 / 0 失�
 AGC 控制台 →「应用管理」→ 选应用 →「版本管理」→「软件包管理」→「上传软件包」
 → 选 `build/ohos/app/ohos-default-signed.app`。
 
+也可以直接用脚本往那个文件选择框里塞文件(浏览器没法用 JS 模拟选文件,
+只能走 CDP 的 `DOM.setFileInputFiles`):
+
+```bash
+python3 harmony/toolchain/agc/agc_upload.py \
+    build/ohos/app/ohos-default-signed.app
+```
+
+> 页面结构变了就加上 `--index N`(第几个 `input[type=file]`)或 `--scope top` ✓。
+
 ## 3. 版本页:先选包,再改文案(顺序反了会被重置)
 
 「版本信息」页 → 点「去选择」→ 选刚上传的 1.0.3 → **确认**。
@@ -100,6 +110,18 @@ AGC 控制台 →「应用管理」→ 选应用 →「版本管理」→「软�
 * 权限说明:§3
 * 分类/年龄分级/隐私政策网址/支持设备:§6 表格(**平板保持关掉**,
   勾上会多出设备页签并触发「必填信息未填写」把提交卡住)
+
+**别手抄** —— 三段文案都带中文标点,抄错一个字就是商店页上肉眼可见的瑕疵。
+先把它抠出来,连同长度一起看:
+
+```bash
+python3 harmony/toolchain/agc/agc_listing_texts.py --check     # 只看长度
+python3 harmony/toolchain/agc/agc_listing_texts.py             # 打印三段
+python3 harmony/toolchain/agc/agc_listing_texts.py --write-dir /tmp/listing
+```
+
+> 长度(第 13 轮实测):应用介绍 383 字、权限说明 312 字、更新说明 334 字 ✓,
+> 控制台的字段上限远大于这些 ✓。
 
 ## 6. 提交
 

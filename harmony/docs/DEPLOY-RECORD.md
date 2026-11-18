@@ -970,3 +970,19 @@ deviceTypes 决定是否置 true),但**实测把它置 false,1024 的源图照�
   editor/whiteboard 差 0.01~0.04 ✓、fabmenu 1.16 ✓、home 5.64(笔记列表 ✓)——
   仓库里那四张就是当前界面的截图 ✓,不需要重传 ✓。
 
+
+### 新增工具:`harmony/toolchain/agc/agc_listing_texts.py`
+
+版本表单里那三段文案(App 介绍 / 版本更新说明 / 权限说明)都带中文标点,
+手抄最容易出错 —— 抄错一个字就是商店页上肉眼可见的瑕疵,而审核员就是
+照着商店页看应用的。这个脚本直接从 `store-listing.md` 里抠出三段并报长度:
+
+```bash
+python3 harmony/toolchain/agc/agc_listing_texts.py --check          # 只看长度
+python3 harmony/toolchain/agc/agc_listing_texts.py                  # 打印三段
+python3 harmony/toolchain/agc/agc_listing_texts.py --write-dir /tmp/listing
+```
+
+长度(实测):应用介绍 383 / 权限说明 312 / 更新说明 334 ✓,控制台字段上限远大于这些 ✓。
+`RESUBMIT-CHECKLIST.md` 的第 2 步(上传包)也补上了 `agc_upload.py` 的用法 ✓。
+

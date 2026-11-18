@@ -1177,3 +1177,27 @@ SDK 和对应的适配 ✗✗,现在做不了 ✓✓。1.0.3 的提交在 2027 �
 
 平板已重装清场 ✓。
 
+
+### 2026-11-18 第 14 轮:上架材料与文案的可执行性收口
+
+审核还在等(第 5 次轮询 ✓)。这一轮把「万一被打回要照着做」的那份清单
+从**说明**变成**可直接执行**:
+
+* 新增 `harmony/toolchain/agc/agc_listing_texts.py` ✓ —— 三段文案直接从
+  `store-listing.md` 抠出来 + 报长度,不要手抄 ✓✓;
+* `RESUBMIT-CHECKLIST.md` 第 2 步补上 `agc_upload.py` 的用法 ✓(文件选择框
+  只能走 CDP 的 `DOM.setFileInputFiles` ✓)。
+
+**材料体检**(全部对着要上传的东西本身查 ✓):
+
+| 材料 | 检查 | 结果 |
+|---|---|---|
+| `授权材料.zip` | 只含 2 个 PDF ✓、PDF 头 `%PDF` ✓、zip 完整性 ✓ | 624,909 B ✓ |
+| `saber-open-source-audit.zip` | LICENSE + README + 2 个 PDF ✓、zip 完整性 ✓ | 639,543 B ✓ |
+| `开源说明与授权依据.pdf` | 2 页 ✓、`%%EOF` 齐全 ✓ | 661,185 B ✓ |
+| `GPL-3.0-LICENSE.pdf` | 11 页 ✓、`%%EOF` 齐全 ✓ | 44,199 B ✓ |
+| `harmony/assets/app-icon-1024.png` | 1024×1024 ✓、mode=RGB(**无 alpha 通道**)✓ | 52,554 B ✓ |
+
+线上页面也顺手复核了一遍 ✓:`index.html` 里没有 "Saber" 的残留 ✓,
+只有「赛博手写笔记」+ 跳转到隐私政策 ✓;隐私政策页仓库与线上 md5 一致 ✓。
+
