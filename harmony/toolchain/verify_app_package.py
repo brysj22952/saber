@@ -195,6 +195,39 @@ def check_signature(package: pathlib.Path) -> None:
                 bad(f"包内 profile 与 app-release.p7b 不一致({got} != {want})")
 
 
+def check_no_third_party_sdk(hap_bytes: bytes) -> None:
+    """确认包里没有第三方崩溃上报/埋点 SDK,且只申请了声明过的权限。
+
+    应用市场里写的是「不采集崩溃日志、不收集任何个人信息、仅申请 INTERNET」,
+    这一项就是对这些声明的机器校验:上游自带 Sentry 崩溃上报(DSN 写死),
+    移植版本已经整体移除,这里防止它被误带回来。
+    """
+    with zipfile.ZipFile(io.BytesIO(hap_bytes)) as h:
+        names = h.namelist()
+        blob = b""
+        for n in names:
+            if n.endswith(".so"):
+                blob += h.read(n)
+        lib_names = [n for n in names if "sentry" in n.lower()]
+
+    markers = [b"sentry.io", b"o4509780708229120", b"ingest.sentry"]
+    found = [m.decode() for m in markers if m in blob]
+    if found or lib_names:
+        bad(f"包里发现了第三方崩溃上报 SDK 的痕迹:{found or lib_names}")
+    else:
+        ok("包内无第三方崩溃上报/埋点 SDK(无 sentry 痕迹)")
+
+    with zipfile.ZipFile(io.BytesIO(hap_bytes)) as h:
+        module = json.loads(h.read("module.json").decode("utf-8"))
+    perms = {p["name"] for p in module.get("module", {}).get("requestPermissions", [])}
+    for ability in module.get("module", {}).get("abilities", []):
+        perms |= {p["name"] for p in (ability.get("permissions") or [])}
+    if perms == {"ohos.permission.INTERNET"}:
+        ok("包内只申请 ohos.permission.INTERNET 一个权限(与商店声明一致)")
+    else:
+        bad(f"包内申请的权限是 {sorted(perms)},商店声明里只写了 INTERNET")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("packages", nargs="*", help="要验收的 .app / .hap 路径")
@@ -217,6 +250,7 @@ def main() -> int:
         check_icons(hap_bytes)
         check_pack_info(package)
         check_app_name(hap_bytes)
+        check_no_third_party_sdk(hap_bytes)
         if not args.skip_signature:
             check_signature(package)
 

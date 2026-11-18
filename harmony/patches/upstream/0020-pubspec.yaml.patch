@@ -1,8 +1,27 @@
 diff --git a/pubspec.yaml b/pubspec.yaml
-index f27e3b97..e3e65c71 100644
+index f27e3b9..3c7e051 100644
 --- a/pubspec.yaml
 +++ b/pubspec.yaml
-@@ -239,6 +239,7 @@ flutter:
+@@ -166,9 +166,6 @@ dependencies:
+   stow_secure: ^0.7.0
+   stow_codecs: ^1.4.0
+ 
+-  sentry_flutter: ^10.3.0
+-  sentry_logging: ^10.3.0
+-
+   background_downloader: ^9.2.6
+ 
+   flutter_hooks: ^0.21.3+1
+@@ -195,8 +192,6 @@ dev_dependencies:
+ 
+   golden_screenshot: ^12.1.1
+ 
+-  sentry_dart_plugin: ^3.1.1
+-
+ dependency_overrides:
+   # https://github.com/darioielardi/flutter_speed_dial/pull/344
+   # Note: flutter_speed_dial hasn't been updated in 3 years, maybe replace it.
+@@ -239,6 +234,7 @@ flutter:
  
    assets:
      - assets/icon/icon.svg
@@ -10,3 +29,12 @@ index f27e3b97..e3e65c71 100644
      - assets/images/
      - assets/google_fonts/Atkinson_Hyperlegible_Next/OFL.txt
      - assets/google_fonts/Dekko/OFL.txt
+@@ -328,8 +324,5 @@ icons_launcher:
+       enable: true
+       image_path: "assets/icon/icon_macos.png"
+ 
+-sentry:
+-  upload_debug_symbols: true
+-  upload_source_maps: true
+   project: saber
+   org: saber-yf

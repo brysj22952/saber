@@ -557,3 +557,70 @@ PDF 结构复核(环境里没有 poppler/pypdf,用 PIL 量墨迹):
 > 提醒:重提 1.0.3 时,新 zip 要同时传**两个槽**(审核附件 + 授权书及其他材料),
 > 顺序仍是**先选包 → 再传附件 → 再改文案 → 最后提交**。
 
+
+### 2026-11-18 第 7 轮:移除第三方崩溃上报 SDK(Sentry)—— 商店声明与包内行为对齐
+
+这轮是查「包内到底申请了什么」时挖出来的**合规隐患**,不是审核报告里的条目,
+但比多数条目更硬:我们在应用市场里白纸黑字写了「不采集崩溃日志、不收集任何
+个人信息」,而包里其实带着一整套崩溃上报 SDK。
+
+**发现**(读 `lib/data/sentry/` + `pubspec.yaml` 得出):
+
+* 上游 `pubspec.yaml` 依赖 `sentry_flutter` / `sentry_logging`,
+  `lib/data/sentry/sentry_init.dart:50` 里**写死了上游作者的 Sentry DSN**
+  (`...@o4509780708229120.ingest.de.sentry.io/4509780710654032`);
+* 首启时 `lib/pages/home/home.dart` 会弹「帮助改进赛博手写笔记?您是否希望
+  自动报告意外错误?」,用户点「同意」后,**本应用会把崩溃数据发到上游作者的
+  Sentry 项目** —— 一个我们既不控制、也对我们用户没有义务的第三方服务器;
+* 设置里还有一个「错误报告」开关(`settings_sentry.dart`);
+* 也就是说:审核员打开应用就会看到这个同意框,一点「同意」就与商店声明
+  「不采集崩溃日志」直接冲突;而且这是把用户数据送到第三方,
+  与 `harmony/docs/privacy-policy.html` 里「没有接入崩溃上报与埋点 SDK」的
+  表述不符(政策页第 49、76 行都这么写)。
+
+**处理**:整体移除,做法与上游自带的 FOSS 版一致 —— 直接复用上游仓库里现成的
+`_sentry_init_foss.dart`(不初始化 SDK、不请求同意、`isSentryAvailable=false`):
+
+| 文件 | 动作 |
+|---|---|
+| `lib/data/sentry/sentry_init.dart` | 改成 `export '_sentry_init_foss.dart';` |
+| `lib/data/sentry/sentry_filter.dart` | 删除 |
+| `lib/components/home/sentry_consent_dialog.dart` | 删除(首启弹窗) |
+| `lib/components/settings/settings_sentry.dart` | 删除(设置项) |
+| `lib/pages/home/home.dart` | 去掉首启弹窗调用与 import |
+| `lib/pages/home/settings.dart` | 去掉「错误报告」开关与两个 import |
+| `pubspec.yaml` | 去掉 `sentry_flutter`/`sentry_logging`/`sentry_dart_plugin` 与顶层 `sentry:` 配置块 |
+
+> 顺带说明:26 个语言的 i18n 里那套 `sentry.*` 翻译键**保留**没删 ——
+> 它们只是没人引用的死数据(删掉要连带重生成 26 个 `strings_*.g.dart`,
+> 风险远大于收益),界面上任何入口都已经不存在了。
+
+**补丁重组**(上游补丁机制的硬约束:一个上游文件只能被一个补丁改):
+
+* `0005`(settings.dart)合并了本次的设置项删除 → 重新生成;
+* `0020`(pubspec.yaml)合并了依赖删除 → 重新生成(基线 = 上游 + 0001,
+  因为 0001 也动 pubspec);
+* 新增 `0022`(sentry_init.dart)、`0023`/`0024`/`0025`(三个文件删除)、
+  `0026`(home.dart);
+* 全量往返验证:上游 → 22 个补丁 → **19 个文件逐字节一致** ✓。
+
+**验收**:`verify_app_package.py` 新增一项「无第三方 SDK + 只申请 INTERNET」
+检查,现在 **10 项全过、0 失败**;包内字符串核查:`sentry.io` /
+`ingest.sentry` / DSN 指纹 **均不存在** ✓;`assets/icon/icon.svg` 仍不存在 ✓。
+
+**连带更新**:
+
+* 授权依据附件新增「八、隐私与数据处理(与应用市场声明完全一致)」,
+  写明不集成任何第三方崩溃上报与埋点 SDK、只申请 INTERNET;
+  zip 重新生成为 **567,960 字节**(README 3,705 字节;PDF 仍是 2 页,
+  墨迹 y[96,1656] 与 y[96,1480],均在 1754 页高内、无溢出 ✓);
+* 商店文案「权限说明」补一句「本移植版本未集成任何第三方崩溃上报 SDK,
+  应用不会向用户征求错误上报的同意」。
+
+**对当前 1.0.2 的影响**:1.0.2(1000002,审核中)是带着 Sentry 提交的,包里还有它。
+处理路径:
+
+* 若 1.0.2 被退回 → 直接用修好的 **1.0.3(1000003)** 重提(已发布签名、
+  验收 10/10、且同时补上两个附件槽);
+* 若 1.0.2 通过 → 上架后再发 **1.0.4** 把这块去掉(属常规更新,不影响上架)。
+

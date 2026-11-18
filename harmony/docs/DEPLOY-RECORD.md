@@ -855,3 +855,19 @@ deviceTypes 决定是否置 true),但**实测把它置 false,1024 的源图照�
 所以「包内单层图 1024」这条只能靠 DevEco Studio 的 Image Asset(按限定词生成
 不同尺寸的单层图),本机没有 DevEco Studio,做不到 —— 而这条本来就不阻塞上架。
 
+
+### 2026-11-18 第 7 轮:应用包去掉第三方崩溃上报 SDK 后重新构建
+
+* 改动:`lib/data/sentry/*`(整体换成上游 FOSS 实现)、`lib/pages/home/home.dart`、
+  `lib/pages/home/settings.dart`、`pubspec.yaml`(去掉 sentry 依赖)。
+* 补丁:新增 `0022`–`0026`,并把 `0005`(settings.dart)、`0020`(pubspec.yaml)
+  合并重建;**全量往返验证 19 个文件逐字节一致** ✓。
+* 构建:`APP_VERSION_NAME=1.0.3 APP_VERSION_CODE=1000003 bash harmony/scripts/build_ohos.sh --app`
+  (日志 `/tmp/build_1.0.3_v7.log`),构建前把 `ohos/signing/app.p7b` 换成
+  `app-release.p7b`,构建后换回调试 Profile(md5 `75fcf9472804a6c09d771bfe00699495` ✓)。
+* 产物:`build/ohos/app/ohos-default-signed.app` **16.51 MB**,发布签名 ✓。
+* 验收:`python3 harmony/toolchain/verify_app_package.py` → **10 项通过 / 0 失败**
+  (新增「无第三方 SDK + 只申请 INTERNET」一项)。
+* 运行时核查:包内不再出现 `sentry.io` / 上游 DSN 指纹;
+  `assets/icon/icon.svg` 不在包内,`assets/icon/brand_icon.png` 在 ✓。
+
