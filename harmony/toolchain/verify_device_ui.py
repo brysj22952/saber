@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""真机 UI 自检:验证第 1 轮审核意见对应的界面改动确实生效。
+"""真机 UI 自检:验证历轮整改在真机上确实生效。
 
-要检查的 4 件事:
-  1. 应用标题显示「Saber 手写笔记」(改了名字,避免与市场上已有应用重名)
-  2. 设置 → 应用信息 里的版本号是 1.0.1 / 1000001(之前显示的是上游的 1.37.1 / 137010)
+要检查的 7 件事:
+  1. 应用标题显示「赛博手写笔记」(改名后与市场上已有应用不再重名)
+  2. 设置 → 应用信息 里的版本号是 1.0.3 / 1000003(之前显示的是上游的 1.37.1 / 137010)
   3. 设置里不再有「主题类型」(那一项是 Linux/Yaru 主题,鸿蒙上会灰屏)
   4. Nextcloud 登录页有隐私政策复选框 + 「不同意并退出」,且未勾选时登录按钮不可点
+  5. **设置里没有「错误报告」开关**(崩溃上报 SDK 已整个去掉 —— 第 7 轮整改)
+  6. **首启没有「是否希望自动报告意外错误」弹窗**(同上,别再弹一次)
+  7. **首启没有「可用更新」弹窗**(启动时不再联网查更新,离线承诺成立 —— 第 9 轮整改)
 
 用法:
   python3 harmony/toolchain/verify_device_ui.py [--ip 10.0.0.4] [--port 39551]
@@ -30,12 +33,17 @@ HDC = os.environ.get(
     "/root/hzq/saber-ohos/ohos-sdk-root/ohos-sdk/18/toolchains/hdc",
 )
 BUNDLE = "com.sabernotes.saber"
-APP_NAME = "Saber 手写笔记"
-VERSION_NAME = "1.0.1"
-VERSION_CODE = "1000001"
+APP_NAME = "赛博手写笔记"
+VERSION_NAME = "1.0.3"
+VERSION_CODE = "1000003"
 PRIVACY_TEXT = "我已阅读并同意"
 DISAGREE_TEXT = "不同意并退出"
 THEME_TYPE_TEXT = "主题类型"
+# 崩溃上报 SDK 已去掉:这两处文字都不该再出现
+SENTRY_SWITCH_TEXT = "错误报告"
+SENTRY_CONSENT_TEXT = "自动报告意外错误"
+# 启动时不再联网查更新:这个弹窗不该出现
+UPDATE_DIALOG_TEXT = "可用更新"
 
 
 def sh(cmd, timeout=180):
@@ -147,6 +155,18 @@ def main():
     # 1. 标题
     check("应用标题显示新名称", any(APP_NAME in t for t in ts), f"找 {APP_NAME!r}")
 
+    # 6/7. 首启不该有的两个弹窗(崩���上报 / 更新检查)
+    check(
+        "首启没有「自动报告意外错误」弹窗",
+        not any(SENTRY_CONSENT_TEXT in t for t in ts),
+        f"不该出现 {SENTRY_CONSENT_TEXT!r}",
+    )
+    check(
+        "首启没有「可用更新」弹窗",
+        not any(UPDATE_DIALOG_TEXT in t for t in ts),
+        f"不该出现 {UPDATE_DIALOG_TEXT!r}",
+    )
+
     # 2/3. 设置页
     print("== 打开设置 ==")
     node, xy = find_by_text(layout, "设置")
@@ -159,13 +179,20 @@ def main():
     layout = dump("settings")
     ts = texts(layout)
     print("  设置页文字:", ts[:25])
+    # 设置项可能在首屏之下(「错误报告」那一项就在下面),
+    # 所以往下滚两屏再抓一次,把两屏的文字合起来查。
+    for i in range(2):
+        swipe(2800, 1600, 2800, 700)
+        layout2 = dump(f"settings_scroll{i}")
+        ts = ts + texts(layout2)
+    print("  滚动后累计文字条数:", len(ts))
     check(
-        "版本号显示为 1.0.1",
+        f"版本号显示为 {VERSION_NAME}",
         any(VERSION_NAME in t for t in ts),
         f"找 {VERSION_NAME!r}",
     )
     check(
-        "版本号显示为 1000001",
+        f"版本号显示为 {VERSION_CODE}",
         any(VERSION_CODE in t for t in ts),
         f"找 {VERSION_CODE!r}",
     )
@@ -174,10 +201,20 @@ def main():
         not any(THEME_TYPE_TEXT in t for t in ts),
         f"不该出现 {THEME_TYPE_TEXT!r}",
     )
+    check(
+        "设置里没有「错误报告」开关",
+        not any(SENTRY_SWITCH_TEXT in t for t in ts),
+        f"不该出现 {SENTRY_SWITCH_TEXT!r}",
+    )
 
     # 4. 登录页的隐私复选框
     print("== 打开 Nextcloud 登录页 ==")
-    layout = dump("settings")
+    # 刚才为了找「错误报告」往下滚过两屏,这里先滚回顶部,
+    # 否则「点击以使用 Nextcloud 登录」不在可视区,坐标会点到别的地方
+    # (点到隐私政策链接就会把浏览器拉出来 —— 第 11 轮踩过)。
+    for i in range(2):
+        swipe(2800, 700, 2800, 1600)
+    layout = dump("settings_top")
     node, xy = find_by_text(layout, "点击以使用 Nextcloud 登录")
     if xy:
         tap(*xy)
@@ -185,7 +222,7 @@ def main():
         # 用户入口通常在应用栏右侧的人形头像上
         sh("uitest uiInput click 2950 150")
         time.sleep(3)
-        layout = dump("user")
+        layout = dump("user")  # 顶部右上角的人形头像 → 用户页
         node, xy = find_by_text(layout, "点击以使用 Nextcloud 登录")
         if xy:
             tap(*xy)
