@@ -212,10 +212,15 @@ def main():
     # 刚才为了找「错误报告」往下滚过两屏,这里先滚回顶部,
     # 否则「点击以使用 Nextcloud 登录」不在可视区,坐标会点到别的地方
     # (点到隐私政策链接就会把浏览器拉出来 —— 第 11 轮踩过)。
-    for i in range(2):
-        swipe(2800, 700, 2800, 1600)
-    layout = dump("settings_top")
-    node, xy = find_by_text(layout, "点击以使用 Nextcloud 登录")
+    # 滚的次数不固定,一直滚到那个入口回到屏幕上半部分为止。
+    layout = None
+    for i in range(6):
+        for _ in range(2):
+            swipe(2800, 700, 2800, 1600)
+        layout = dump(f"settings_top{i}")
+        node, xy = find_by_text(layout, "点击以使用 Nextcloud 登录")
+        if xy and xy[1] < 1200:
+            break
     if xy:
         tap(*xy)
     else:
@@ -226,7 +231,13 @@ def main():
         node, xy = find_by_text(layout, "点击以使用 Nextcloud 登录")
         if xy:
             tap(*xy)
+    # 登录页第一次打开要初始化一点时间,点完等久一点;没跳过去就再点一次
     layout = dump("login")
+    if not any(PRIVACY_TEXT in t for t in texts(layout)):
+        if xy:
+            tap(*xy)
+            time.sleep(4)
+        layout = dump("login")
     ts = texts(layout)
     print("  登录页文字:", ts[:25])
     check("有隐私政策复选框", any(PRIVACY_TEXT in t for t in ts), f"找 {PRIVACY_TEXT!r}")
