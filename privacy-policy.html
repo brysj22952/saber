@@ -110,7 +110,7 @@
   <li>技术说明(如实告知):本 HarmonyOS 版本目前是把上述凭据以及本机的
       <strong>笔记加密密钥</strong>放在应用私有目录中保存,<strong>尚未</strong>
       接入鸿蒙的硬件密钥托管服务(HUKS),因此它们在本机<strong>不是</strong>
-      硬件加密存放的;后续版本会改用 HUKS 加密保存。
+      硬件加密存放的;后续版本计划改用 HUKS 加密保存。
       上面的「应用沙箱隔离」是当前实际生效的保护措施。
       (笔记密钥在服务器上的副本由你设置的「笔记加密口令」加密保护 ✓)</li>
   <li>笔记在上传前会<strong>用随机密钥加密</strong>,服务端保存的是密文;</li>
@@ -165,7 +165,7 @@ the app's private directory (protected by HarmonyOS app sandboxing, and never up
 to any server we can reach), and your notes are encrypted with a random key before upload.
 For the record: this HarmonyOS build stores those credentials in the app's private directory and
 does <em>not</em> yet use the HarmonyOS hardware key service (HUKS), so neither they nor the local
-copy of your note-encryption key are hardware-encrypted at rest; a later release will move both
+copy of your note-encryption key are hardware-encrypted at rest; a later release plans to move both
 to HUKS. (The copy of the note-encryption key stored on your own server is protected by the
 encryption password you set.)
 the data travels only between your device and the Nextcloud server you chose. Uninstalling
