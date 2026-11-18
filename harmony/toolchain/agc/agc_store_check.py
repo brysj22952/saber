@@ -44,6 +44,10 @@ DEFAULT_ICON = os.path.join(REPO, "harmony", "assets", "app-icon-1024.png")
 DEFAULT_SHOTS = os.path.join(REPO, "harmony", "docs", "store-screenshots")
 # 介绍文案里挑一句比较独特的(商店里应该原样出现)
 DEFAULT_INTRO_MARK = "完全离线可用"
+# 我们自己的隐私政策网址(应用市场里填的是这个)。
+# 注意:商店页脚**自己**也有 privacy.consumer.huawei.com 的通用法律链接,
+# 那些不算数 —— 必须能找到我们这个网址,才算「隐私政策链接已生效」。
+DEFAULT_PRIVACY_URL = "https://brysj22952.github.io/saber/privacy-policy.html"
 
 
 def find_cdp_port(default=DEFAULT_PORT):
@@ -162,10 +166,15 @@ def main():
     ap.add_argument("--icon", default=DEFAULT_ICON, help="本地商店图标(1024 PNG)")
     ap.add_argument("--shots-dir", default=DEFAULT_SHOTS, help="本地商店截图目录")
     ap.add_argument("--intro-mark", default=DEFAULT_INTRO_MARK, help="介绍文案里的关键句")
+    ap.add_argument("--privacy-url", default=DEFAULT_PRIVACY_URL,
+                    help="我们自己的隐私政策网址(商店里填的那个)")
+    ap.add_argument("--url", default=None,
+                    help="直接指定要核对的页面 URL(默认按 --app-id 拼 /app/C<id>)。"
+                         "想按商店搜索结果核对时用这个。")
     args = ap.parse_args()
 
     port = args.port or find_cdp_port()
-    url = "%s/app/C%s" % (args.host.rstrip("/"), args.app_id)
+    url = args.url or "%s/app/C%s" % (args.host.rstrip("/"), args.app_id)
 
     # 找一个浏览器级连接(拿它来开新标签页)
     with urllib.request.urlopen("http://127.0.0.1:%d/json/version" % port, timeout=10) as r:
@@ -209,9 +218,15 @@ def main():
     report = {"url": url, "title": title, "checks": {}}
 
     # ---------- 1. 名称 ----------
+    # 注意:搜索结果页会把搜索词回显在正文里,正文里出现应用名**不等于**应用已上架,
+    # 所以用 --url 指定的搜索页只适合粗看「有没有搜到」,
+    # 真正的核对要走 /app/C<appId> 详情页(URL 里不含应用名,不会回显)。
     name_ok = args.name in body
-    report["checks"]["名称"] = {"ok": name_ok, "detail": args.name}
-    print("\n[名称] %s —— %s" % ("✓" if name_ok else "✗", args.name))
+    echo_risk = args.url is not None and args.name in (args.url or "")
+    report["checks"]["名称"] = {"ok": name_ok, "detail": args.name, "echo_risk": echo_risk}
+    print("\n[名称] %s —— %s%s"
+          % ("✓" if name_ok else "✗", args.name,
+             "(注意:搜索页会回显搜索词,不能据此判断已上架)" if echo_risk else ""))
 
     if not name_ok:
         print("\n✗ 页面正文里找不到应用名,多半是**还没上架**"
@@ -287,7 +302,10 @@ def main():
     print("\n[介绍] %s —— 正文含「%s」" % ("✓" if intro_ok else "✗", args.intro_mark))
 
     # ---------- 6. 隐私政策 ----------
-    pol_links = [l for l in links if "privacy" in l.lower() or "隐私" in l]
+    # 商店页脚自己也有 Huawei 的通用法律链接(privacy.consumer.huawei.com/...),
+    # 那些**不算** —— 必须找到我们自己填的那个网址,并能打开。
+    pol_links = [l for l in links if args.privacy_url in l]
+    in_body = args.privacy_url in body
     pol_status = None
     for l in pol_links[:3]:
         try:
@@ -297,12 +315,28 @@ def main():
                 break
         except Exception as e:
             pol_status = "打开失败:%s" % e
-    pol_ok = bool(pol_links) and pol_status == 200
-    report["checks"]["隐私政策"] = {"ok": pol_ok, "links": pol_links[:3], "status": pol_status}
-    print("\n[隐私政策] %s —— %d 条相关链接,HTTP %s"
-          % ("✓" if pol_ok else "✗", len(pol_links), pol_status))
+    if not pol_links and in_body:
+        # 网址以纯文本出现(不是 <a href>),也认 —— 但仍要确认它能打开
+        try:
+            req = urllib.request.Request(args.privacy_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=20) as r:
+                pol_status = r.status
+        except Exception as e:
+            pol_status = "打开失败:%s" % e
+    pol_ok = bool(pol_links) or in_body
+    pol_ok = pol_ok and (pol_status == 200)
+    report["checks"]["隐私政策"] = {"ok": pol_ok, "links": pol_links[:3],
+                                    "in_body": in_body, "status": pol_status,
+                                    "expect": args.privacy_url}
+    print("\n[隐私政策] %s —— 找到我们的政策网址:%s,HTTP %s"
+          % ("✓" if pol_ok else "✗", "是" if (pol_links or in_body) else "否", pol_status))
     for l in pol_links[:3]:
         print("        %s" % l)
+    if not pol_ok:
+        other = [l for l in links if "privacy" in l.lower() or "隐私" in l][:5]
+        print("        (页面上其它带 privacy 的链接 —— 多半是商店自己的通用法律链接,不算):")
+        for l in other:
+            print("          %s" % l)
 
     def check_ok(v):
         if isinstance(v, dict) and "ok" in v:
