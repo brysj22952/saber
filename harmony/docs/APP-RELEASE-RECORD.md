@@ -1093,3 +1093,30 @@ cd /tmp/clone-test && bash harmony/scripts/apply_upstream_patches.sh
 
 平板已恢复干净:卸载重装,应用语言回到「系统语言」,无遗留测试笔记 ✓。
 
+
+### 2026-11-18 第 12 轮(续三):导出功能也查了一遍
+
+审核员第 1 轮实测过「导入 PDF 无响应」,所以导出这条路径也顺带查了:
+
+* `lib/components/home/export_note_button.dart` → `EditorExporter.generatePdf` →
+  `FileManager.exportFile` → `FilePicker.saveFile`(`file_manager.dart:377`)✓
+  —— 从导出按钮到写盘是一条完整链路 ✓;
+* 鸿蒙侧 `FilePickerDelegate.ets:115` 的 `saveFile` 用的是系统
+  `picker.DocumentSaveOptions` ✓ —— 「另存为」对话框是系统提供的 ✓,
+  和「导入」走同一套 `file_picker_ohos` ✓;
+* 真机上长按笔记能弹出操作面板 ✓(画面变化 12.2 万像素 ✓),
+  但 Flutter 的浮层没有把面板里的文字暴露给无障碍树 ✓,
+  读不到条目文字 —— 只能确认面板确实弹出来了 ✓。
+
+平板已重装清场 ✓(无遗留测试笔记 ✓)。
+
+**隐私政策里的 HUKS 承诺已改** ✓:原来写「后续版本**会**改用 HUKS 加密保存」,
+政策是公开承诺,不能留一个自己不打算兑现的说法 —— 改成「**计划**改用」✓,
+只陈述现状(凭据与本机笔记密钥目前放在应用私有目录,靠沙箱隔离保护,
+尚未接入硬件密钥托管服务)✓。中英文两处都改了 ✓,线上已生效 ✓
+(仓库 md5 与线上 md5 一致 ✓)。
+
+HUKS 的具体做法与验收要点记在 `harmony/docs/ohos.md` 末尾的待办里 ✓,
+上架之后再做 ✓ —— 那是唯一可能**导致用户密钥丢失**的改动,
+必须真机反复验证(写 → 杀进程 → 重启 → 读)才能发版 ✓。
+

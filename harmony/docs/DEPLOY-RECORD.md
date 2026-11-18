@@ -956,3 +956,8 @@ deviceTypes 决定是否置 true),但**实测把它置 false,1024 的源图照�
   形状识别是纯 Dart 实现(无 ML、无原生插件)✓。
 * 平板重装清场 ✓(语言回「系统语言」、无遗留笔记 ✓)。
 
+* **导出链路查通**:导出按钮 → 生成 PDF → `FilePicker.saveFile` → ArkTS
+  `DocumentSaveOptions`(系统「另存为」对话框)✓。
+* **隐私政策线上更新**:HUKS 从「会改用」改成「计划改用」✓,
+  仓库与线上 md5 一致 ✓(CDN 约 40 秒生效 ✓)。
+
