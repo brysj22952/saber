@@ -293,6 +293,18 @@ AGC 控制台 →「应用管理」→「Saber」→「版本管理」→ 新建
 4. 勾选开源许可声明(GPL-3.0,§4.3);
 5. 提交。
 
+**别手抄文案,也别靠肉眼找上传框**:
+
+```bash
+# 三段文案(应用介绍 / 版本更新说明 / 权限说明)直接从 store-listing.md 抠出来,
+# 顺手报长度 —— 手抄中文标点最容易出错
+python3 harmony/toolchain/agc/agc_listing_texts.py --check
+python3 harmony/toolchain/agc/agc_listing_texts.py
+
+# 文件选择框只能走 CDP 的 DOM.setFileInputFiles
+python3 harmony/toolchain/agc/agc_upload.py build/ohos/app/ohos-default-signed.app
+```
+
 **常见卡点**:
 
 - **要求 API 26** → 停,回 §4.1,汇报;
@@ -311,6 +323,23 @@ Seoul 是云电脑,正好长跑:
 python3 harmony/toolchain/agc/agc_console.py top click 应用管理
 python3 harmony/toolchain/agc/agc_console.py iframe text | head -60
 ```
+
+或者交给轮询器常驻(每 5 分钟一次,看到终态自动停,**只能有一个实例**):
+
+```bash
+nohup env AGC_POLL_INTERVAL=300 bash harmony/toolchain/agc/agc_poll_review.sh >/dev/null 2>&1 &
+tail -f /tmp/agc_poll.log
+```
+
+被打回时轮询器会自动把审核报告原文抓下来(报告正文在报告页的 amp iframe 里,
+6 条问题分在 4 个 tab 上,脚本会逐个 tab 点开再读):
+
+```bash
+cat /tmp/agc_audit_report_*.txt
+```
+
+> 轮询器的状态判定逻辑可以单独自测:
+> `bash harmony/toolchain/agc/agc_poll_review.sh --self-test` ✓
 
 被驳回就按意见改 → 重新构建 → 重新提交,并把每一轮的结论写进
 `harmony/docs/DEPLOY-RECORD.md`。
