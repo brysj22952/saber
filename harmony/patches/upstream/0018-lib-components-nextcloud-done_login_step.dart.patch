@@ -1,0 +1,13 @@
+diff --git a/lib/components/nextcloud/done_login_step.dart b/lib/components/nextcloud/done_login_step.dart
+index 3978b8c9..1705a425 100644
+--- a/lib/components/nextcloud/done_login_step.dart
++++ b/lib/components/nextcloud/done_login_step.dart
+@@ -63,7 +63,7 @@ class DoneLoginStep extends StatelessWidget {
+           children: [
+             if (stows.pfp.value == null)
+               if (stows.url.value.isEmpty)
+-                SvgPicture.asset('assets/icon/icon.svg', width: 32, height: 32)
++                Image.asset('assets/icon/brand_icon.png', width: 32, height: 32)
+               else
+                 const Icon(Icons.account_circle, size: 32)
+             else

@@ -174,6 +174,17 @@ def main():
         packaged.save(path, "PNG")
         print(f"✓ {path} (512x512, RGB 无 alpha,包内;= 商店图标的 LANCZOS 缩放)")
 
+    # 应用内品牌图标:「关于」弹窗、登录页、桌面端标题栏原来用的是上游的
+    # assets/icon/icon.svg —— 那正是市场上「Saber」应用用的那张图标。
+    # 审核报告的「知识产权」判定本应用与「Saber」名称/图标相似,应用内部
+    # 再露出同一张图标等于自证相似,所以这里换成同一张母图缩出来的 PNG。
+    brand = store.resize((128, 128), Image.LANCZOS)
+    assert brand.mode == "RGB", brand.mode
+    brand_path = os.path.join(ROOT, "assets", "icon", "brand_icon.png")
+    os.makedirs(os.path.dirname(brand_path), exist_ok=True)
+    brand.save(brand_path, "PNG")
+    print(f"✓ {brand_path} (128x128, RGB 无 alpha,应用内品牌图标)")
+
 
 if __name__ == "__main__":
     main()

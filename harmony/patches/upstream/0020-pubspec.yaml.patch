@@ -1,0 +1,12 @@
+diff --git a/pubspec.yaml b/pubspec.yaml
+index f27e3b97..e3e65c71 100644
+--- a/pubspec.yaml
++++ b/pubspec.yaml
+@@ -239,6 +239,7 @@ flutter:
+ 
+   assets:
+     - assets/icon/icon.svg
++    - assets/icon/brand_icon.png
+     - assets/images/
+     - assets/google_fonts/Atkinson_Hyperlegible_Next/OFL.txt
+     - assets/google_fonts/Dekko/OFL.txt

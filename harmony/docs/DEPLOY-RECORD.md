@@ -816,3 +816,42 @@ packaged = store_1024.resize((512, 512), Image.LANCZOS)
 工具:`harmony/toolchain/rename_ui_strings.py`(带 `--check` 干跑模式),
 它同时负责中英文两套的 yaml + 生成的 .g.dart,并显式区分「该改的」和
 「必须保留上游的」(版权声明、服务器上的数据文件夹名)。
+
+### 2026-11-18 第 5 轮:上游补丁机制的硬约束 —— 一个文件只能由一个补丁改
+
+`harmony/scripts/apply_upstream_patches.sh` 对每个补丁会先做
+`git apply --reverse --check`:能反向应用 = 「已打过」跳过;不能反向但能正向 =
+「待打」;两边都不行 = **「上游文件被改动过,请先解决冲突」并中止构建**。
+
+于是有了这条约束:
+
+> **同一个上游文件只能由一个补丁负责。** 后来的补丁一旦改动了早先补丁的
+> **上下文行**,早先补丁的反向检查就会失败,构建直接报错。
+
+本轮踩到了:0016(about 弹窗图标)改了 `app_info.dart` 里 0010 的上下文行,
+0019(桌面标题栏图标)改了 `dynamic_material_app.dart` 里 0009 的上下文行 ——
+构建在打补丁阶段就中止了(这个报错是好事,说明机制拦住了不一致)。
+
+**正确做法**:把同一文件的新改动**合并回那个文件已有的补丁**,重新生成它:
+
+```bash
+git diff --abbrev=7 -- lib/components/theming/dynamic_material_app.dart \
+  > harmony/patches/upstream/0009-lib-dynamic-material-app-brand.patch
+```
+
+(补丁名也顺手改成反映新内容。)合并后每个文件仍然只有一个补丁,
+反向检查全部通过。
+
+**验证方式**(建议每次改完补丁都跑一遍):
+把工作树退回上游(`git checkout -- lib pubspec.yaml` + 删掉新增文件),
+再 `bash harmony/scripts/apply_upstream_patches.sh`,然后与改动前的快照
+**逐字节比对** —— 本轮 17 个文件全部一致 ✓。
+
+### 顺带查明:restool 的 512 上限不是开关
+
+`iconCheck` 是 restool 的配置项(hvigor 插件按模块类型/单框架/API 版本/
+deviceTypes 决定是否置 true),但**实测把它置 false,1024 的源图照样被压成 512** ——
+512 是 restool 资源编译的硬上限,不是校验开关。
+所以「包内单层图 1024」这条只能靠 DevEco Studio 的 Image Asset(按限定词生成
+不同尺寸的单层图),本机没有 DevEco Studio,做不到 —— 而这条本来就不阻塞上架。
+
