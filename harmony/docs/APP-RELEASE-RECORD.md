@@ -1072,3 +1072,24 @@ cd /tmp/clone-test && bash harmony/scripts/apply_upstream_patches.sh
 **四、真机再复核**:重装后 10/10 ✓;英文界面无一处 "Saber" ✓;
 应用语言已切回「系统语言」✓(平板恢复原状 ✓)。
 
+
+### 2026-11-18 第 12 轮(续二):商店介绍里的功能承诺逐条对账
+
+商店「应用介绍」里有 8 句对用户的承诺,审核员可能逐条试,所以对每句都查了依据:
+
+| 介绍里的说法 | 依据 | 结论 |
+|---|---|---|
+| 支持手写笔与手指书写 | `canvas_gesture_detector.dart` 按 `PointerDeviceKind` 分开处理笔与手指 | ✅ |
+| 压感笔迹 | 笔画带 `pressureEnabled` 属性(`_stroke.dart` / `_rectangle_stroke.dart`),`canvas.dart` 按它决定线宽 | ✅ |
+| 多色画笔 | `lib/data/tools/` 下有钢笔、圆珠笔、铅笔、荧光笔、橡皮、激光笔、选择、形状笔,各自带颜色 | ✅ |
+| 形状识别 | `one_dollar_unistroke_recognizer` —— **纯 Dart** 的 $1 单笔识别器,无原生代码、无 ML 模型,鸿蒙上照常运行 | ✅ |
+| 撤销重做 | `toolbar.dart` 有 undo / redo 按钮与提示文字 | ✅ |
+| 白板模式 | 侧栏「白板」入口,真机可见 | ✅ |
+| 完全离线可用 | 启动不联网查更新(构建时 `UPDATE_CHECK=false`),未开同步时零网络请求 | ✅(已在真机核对) |
+| Nextcloud 同步 + 随机密钥加密 | 同步为可选项,笔记上传前用随机密钥加密 | ✅ |
+
+> 特别查了「形状识别」有没有偷偷依赖 ML 模型或原生插件 —— 没有,
+> `pubspec.yaml` 里既没有 tflite 也没有 mlkit ✓。
+
+平板已恢复干净:卸载重装,应用语言回到「系统语言」,无遗留测试笔记 ✓。
+
