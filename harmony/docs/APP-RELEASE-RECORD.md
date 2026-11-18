@@ -633,3 +633,48 @@ PDF 结构复核(环境里没有 poppler/pypdf,用 PIL 量墨迹):
   验收 10/10、且同时补上两个附件槽);
 * 若 1.0.2 通过 → 上架后再发 **1.0.4** 把这块去掉(属常规更新,不影响上架)。
 
+
+### 2026-11-18 第 8 轮:静态检查清零(analyzer No issues found)
+
+第 7 轮移除 Sentry 之后跑了一次 `flutter analyze`,暴露出**两件之前没发现的事**:
+
+**(1) 上游有两个测试文件失去了被测对象**
+
+| 文件 | 问题 |
+|---|---|
+| `test/sentry_filter_test.dart` | 75 个 undefined 引用(`SentryFilter`/`SentryEvent`/`Hint`…) |
+| `test/sentry_consent_dialog_test.dart` | 测的是已经删掉的同意弹窗 |
+| `test/goldens/sentry_consent_dialog.png` | 上面那个测试的金图 |
+
+三个一起删掉(补丁 `0027`、`0028`)。`flutter analyze` 的问题数从 **82 → 7**。
+
+**(2) 剩下的 7 条里,有一条 analyzer 的「修复建议」是错的**
+
+6 条 info 都在我们自己的 `harmony/packages/stow_secure/`:
+
+* `unnecessary_type_name_in_constructor` ×4 —— analyzer 建议把
+  `factory SecureStow.int(...)` 改成 `factory int(...)`,把
+  `SecureStow(super.key, ...)` 改成 `new(...)`。
+  **这是错的**:`SecureStow.int` / `.bool` / `.numerical` 是这个包的公开 API,
+  去掉类名前缀后调用方(`stows.xxx = SecureStow.int(...)`)全部编译不过。
+  `dart fix --dry-run` 看过建议的形状后**试改、确认破坏性、已还原** ✓,
+  改成在该包加 `analysis_options.yaml` 把这条 lint 关掉,并在注释里写明原因 ✓;
+* `unnecessary_library_name` ×1 —— `library stow_secure;` → `library;` ✓(安全,已改);
+* `overridden_fields` ×1 —— `writeMutex` 覆盖上游字段是**有意为之**:
+  shared_preferences 一次只能写一个 key,所以所有 secure stow 共用一个写锁 ✓,保留。
+
+剩下 1 条 error 在上游 `test/glassy_container_test.dart`:
+`switch (platform)` 没覆盖 `TargetPlatform.ohos`(鸿蒙 fork 才有的平台 ✓)
+→ 补一个分支(补丁 `0029`)✓。
+
+**结果:`flutter analyze` → `No issues found!`** ✓(0 error / 0 warning / 0 info)。
+
+> 顺带记一笔:`flutter test` 在这个环境里**跑不起来** —— 连一个只写
+> `expect(1 + 1, 2)` 的冒烟测试都会在 `flutter_tools/src/test/test_compiler.dart`
+> 里把 Dart 编译器搞崩(*The Dart compiler exited unexpectedly*)。
+> Flutter-OH 的 SDK 只出鸿蒙目标,没有宿主机测试二进制。所以本地只能用
+> analyzer 做静态校验,运行时行为等平板上线再验 ✓。
+
+重新构建了 1.0.3(保证「包」与「源码」一一对应),发布签名 ✓,验收 **10/10** ✓;
+补丁共 27 个,从零打完 20 个文件逐字节一致 ✓。
+

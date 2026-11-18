@@ -871,3 +871,19 @@ deviceTypes 决定是否置 true),但**实测把它置 false,1024 的源图照�
 * 运行时核查:包内不再出现 `sentry.io` / 上游 DSN 指纹;
   `assets/icon/icon.svg` 不在包内,`assets/icon/brand_icon.png` 在 ✓。
 
+
+### 2026-11-18 第 8 轮:静态检查清零 + 重新构建
+
+* `flutter analyze`:**No issues found!**(此前 82 → 7 → 0)。
+  删掉失去被测对象的上游测试(`test/sentry_filter_test.dart`、
+  `test/sentry_consent_dialog_test.dart`)与对应金图(补丁 0027/0028);
+  补上上游测试里漏掉的 `TargetPlatform.ohos` 分支(补丁 0029);
+  `harmony/packages/stow_secure/` 的 analyzer 误报用包内 `analysis_options.yaml`
+  关掉(它建议把 `SecureStow.int` 改成 `int`,会破坏公开 API ✗,试改后已还原)。
+* `flutter test` 本环境不可用:Folke-OH SDK 只出鸿蒙目标,连 `expect(1+1,2)`
+  的冒烟测试都会把编译器搞崩 —— 运行时行为仍待平板上线后验证。
+* 重新构建:`APP_VERSION_NAME=1.0.3 APP_VERSION_CODE=1000003 bash harmony/scripts/build_ohos.sh --app`
+  (日志 `/tmp/build_1.0.3_v8.log`),构建前换成 `app-release.p7b`、构建后换回调试 Profile。
+* 验收:`verify_app_package.py` → 10 项通过 / 0 失败;补丁 27 个,
+  从零打完 20 个文件逐字节一致 ✓。
+

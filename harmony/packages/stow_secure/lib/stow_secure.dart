@@ -9,6 +9,6 @@
 /// (OpenHarmony-TPC/flutter_packages 提供了鸿蒙实现)。
 ///
 /// 通过 `pubspec_overrides.yaml` 覆盖即可,业务代码一行都不用改。
-library stow_secure;
+library;
 
 export 'src/secure_stow.dart';
