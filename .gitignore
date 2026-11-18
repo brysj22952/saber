@@ -76,3 +76,6 @@ coverage/
 # branches of the plugins.
 /saber-ohos-kit/
 /pubspec_overrides.yaml
+
+# 签名 Profile 的本地备份(绝不能进仓库)
+.signing-backup/
