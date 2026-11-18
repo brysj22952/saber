@@ -794,3 +794,66 @@ PDF 结构复核(环境里没有 poppler/pypdf,用 PIL 量墨迹):
 界面文案里没有任何「凭据已加密保存」的说法 ✓(只有 i18n 里一句「笔记会保持加密」✓ 属实),
 商店文案也没写 ✓ —— 需要改的只有政策网页这一处 ✓。
 
+
+### 2026-11-18 第 9 轮续:又抓到一条对不上的承诺 —— 「完全离线」
+
+第 9 轮接着用「拿代码核对公开承诺」的办法查,结果发现**启动时就会联网**:
+
+`lib/components/settings/update_manager.dart` 的 `showUpdateDialog(context)`
+在首页 `_showDialogs()` 里被调用,内部会请求
+`raw.githubusercontent.com/saber-notes/saber/main/lib/data/version.dart`
+和 `api.github.com/repos/saber-notes/saber/releases/latest`。
+上游默认开启(`FlavorConfig.shouldCheckForUpdatesByDefault` 默认 `true`)✗。
+
+这跟两处公开承诺对不上 ✗:
+
+| 公开承诺 | 出处 | 实际情况(改之前) |
+|---|---|---|
+| 「平时完全离线可用」 | 商店介绍 §2、权限说明 §3 | ✗ 每次启动都向 GitHub 发请求 |
+| 「应用运行时不会与我们的任何服务器通信」 | 隐私政策 §2 | ✗ 同上 |
+
+而且它查的是**上游的 Android 版 release** —— 对鸿蒙用户毫无意义 ✓
+(真跳过去,给的是 APK,装不上 ✗)。
+
+**改法:上游本身就留了开关** ✓ —— `main.dart` 注释里就写着
+`--dart-define=UPDATE_CHECK="false"` ✓,于是构建脚本里加一行:
+
+```bash
+  --dart-define=UPDATE_CHECK=false
+```
+
+上游代码里 `showUpdateDialog` 只有首页这一个调用点 ✓(设置里没有手动检查更新的入口 ✓),
+`shouldCheckForUpdates` 这个偏好项也没有界面可以改 ✓,所以默认 false 之后
+**在你主动开启同步之前,应用一次网络请求都不发** ✓✓。
+
+顺带确认:没有开启同步时不会有别的联网行为 ✓ ——
+`NextcloudClient.withSavedDetails()` 在 `!stows.loggedIn` 时直接返回 null ✓,
+后台同步任务(`doBackgroundSync`)拿不到 client 就不会发请求 ✓。
+
+**隐私政策同步补了一句**(中英文都有 ✓,已推 gh-pages ✓):
+「在你主动开启 Nextcloud 同步之前,本应用不会发出任何网络请求 ——
+包括不会在启动时自动联网检查版本更新;整个笔记应用完全在你的设备上本地运行。」
+
+> 这两条承诺在 **1.0.2(已提交审核)里是不成立的** ✗ —— 它的版本表单已锁定,改不了 ✗。
+> 1.0.3 起才真正成立 ✓。
+> 顺带说明:商店介绍与权限说明的文案**不用改** ✓ —— 「完全离线可用」在 1.0.3 上是真的了 ✓。
+
+
+**1.0.3 重新构建(第 9 轮)**:
+
+* 构建前把 `ohos/signing/app.p7b` 换成 `app-release.p7b`(发布 Profile),
+  构建完自动换回调试 Profile(md5 `75fcf9472804a6c09d771bfe00699495` ✓ 已核对);
+* 产物 `build/ohos/app/ohos-default-signed.app`,16.51 MB;
+* `verify_app_package.py` **10 项全过 / 0 失败** ✓
+  (图标 512×512 无 alpha ✓、包名 ✓、版本 1.0.3/1000003 ✓、
+  应用名「赛博手写笔记」✓、**无 Sentry 痕迹** ✓、
+  **只申请 INTERNET 一个权限** ✓、签名校验通过 ✓、
+  包内 profile = release ✓ 且与 `app-release.p7b` 完全一致 ✓)。
+
+> 说明:`UPDATE_CHECK=false` 是编译期常量,编译后不会在产物里留下字符串,
+> 所以没法从包里反查。证据链是:构建脚本里带着这个 define ✓ →
+> 上游 `main.dart` 注释里就写着这个开关 ✓ →
+> `shouldCheckForUpdates` 的默认值 = `FlavorConfig.shouldCheckForUpdatesByDefault && !Platform.isLinux` ✓
+> → `showUpdateDialog` 全工程只有首页一个调用点 ✓、这个偏好项没有界面能改 ✓。
+> 真机上再确认一次「启动时无网络请求」即可闭环 ✓(平板还没上线)。
+

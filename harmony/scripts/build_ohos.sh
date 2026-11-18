@@ -156,9 +156,16 @@ flutter build "$BUILD_TARGET" --"$BUILD_MODE" \
   --build-number="$APP_VERSION_CODE" \
   --dart-define=APP_VERSION_NAME="$APP_VERSION_NAME" \
   --dart-define=APP_VERSION_CODE="$APP_VERSION_CODE" \
-  --dart-define=FLUTTER_OHOS_AOT_BUILD=true
+  --dart-define=FLUTTER_OHOS_AOT_BUILD=true \
+  --dart-define=UPDATE_CHECK=false
 
 echo "==> 版本号: $APP_VERSION_NAME ($APP_VERSION_CODE)"
+
+# UPDATE_CHECK=false:关掉「启动时向 GitHub 查更新」。
+# 上游默认开启,启动就会请求 raw.githubusercontent.com / api.github.com ——
+# 这跟我们在应用市场与隐私政策里写的「平时完全离线可用 / 不与任何服务器通信」
+# 对不上(而且它查的是上游的 Android 版 release,给鸿蒙用户也没有意义)。
+# 改成只由用户主动触发时才会联网(上游保留了 userTriggered 分支)。
 
 echo "==> 5/6 完成"
 find build/ohos \( -name "*.hap" -o -name "*.app" \) -exec ls -lh {} \;

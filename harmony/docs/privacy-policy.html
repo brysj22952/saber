@@ -79,6 +79,10 @@
 
 <p>应用运行时<strong>不会与我们的任何服务器通信</strong>,开发者也无法看到你的任何数据。</p>
 
+<p>在你主动开启 Nextcloud 同步之前,本应用<strong>不会发出任何网络请求</strong> ——
+包括不会在启动时自动联网检查版本更新(版本检查默认关闭,只有在你自己触发时才会发生);
+整个笔记应用完全在你的设备上本地运行。</p>
+
 <h2>3. 数据存在哪里</h2>
 
 <p>你的笔记、图片、白板和应用设置,默认<strong>只写在本机的应用私有目录里</strong>
@@ -155,7 +159,8 @@ this HarmonyOS port, including its full build chain, is at
 default. We collect <strong>no personal information</strong>, ship <strong>no ads and no
 analytics SDK</strong>, and do <strong>not collect crash logs</strong>. The app requests a
 single permission, <code>ohos.permission.INTERNET</code>, which is used only if you
-opt in to Nextcloud sync. With sync enabled, the server URL and credentials are kept in
+opt in to Nextcloud sync. Until you do, the app makes <strong>no network requests at all</strong> —
+it does not even check for updates in the background; the whole app runs locally on your device. With sync enabled, the server URL and credentials are kept in
 the app's private directory (protected by HarmonyOS app sandboxing, and never uploaded or synced
 to any server we can reach), and your notes are encrypted with a random key before upload.
 For the record: this HarmonyOS build stores those credentials in the app's private directory and
