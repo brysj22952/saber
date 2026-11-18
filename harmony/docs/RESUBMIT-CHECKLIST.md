@@ -21,12 +21,26 @@ python3 harmony/toolchain/verify_app_package.py     # 期望:10 项通过 / 0 �
 如果包不在了,重新构建(**注意签名切换**):
 
 ```bash
-source /root/hzq/saber-ohos/env.sh
-cp ohos/signing/app.p7b /root/hzq/saber-ohos/.signing-backup/app.p7b.debug-$(date +%Y%m%d-%H%M)
+cd /root/hzq/saber-ohos/saber
+mkdir -p .signing-backup
+TS=$(date +%Y%m%d-%H%M%S)
+cp ohos/signing/app.p7b ".signing-backup/app.p7b.debug-$TS"
 cp ohos/signing/app-release.p7b ohos/signing/app.p7b        # ← 换成发布 Profile
+# 用 trap 保证**构建失败也会换回调试 Profile**(否则下次调试包就签不上了)
+restore() { cp ".signing-backup/app.p7b.debug-$TS" ohos/signing/app.p7b; }
+trap restore EXIT
+source /root/hzq/saber-ohos/env.sh
 APP_VERSION_NAME=1.0.3 APP_VERSION_CODE=1000003 bash harmony/scripts/build_ohos.sh --app
-cp /root/hzq/saber-ohos/.signing-backup/app.p7b.debug-<时间戳> ohos/signing/app.p7b   # ← 换回调试
 ```
+
+构建完核对两件事:
+
+```bash
+md5sum ohos/signing/app.p7b          # 期望 75fcf9472804a6c09d771bfe00699495(调试 Profile)
+python3 harmony/toolchain/verify_app_package.py   # 期望:10 项通过 / 0 失败
+```
+
+> `.signing-backup/` 已在 `.gitignore` 里 ✓,签名材料永远不会进仓库 ✓。
 
 ## 2. 上传包
 
@@ -51,6 +65,16 @@ AGC 控制台 →「应用管理」→ 选应用 →「版本管理」→「软�
 > —— 控制台原文就是这么写的,第 8 轮核对过 ✓。
 > 1.0.2 这个槽是空的(审核期间字段被禁用 ✗),很可能在「应用资质」上再被打回,
 > 所以重提时两个槽都要传。
+
+## 4b. 顺手确认「应用截图和视频」还带着那四张图
+
+版本表单里「应用截图和视频」是**必填**的(介绍截图)✗。新版本表单可能不继承
+1.0.2 的截图 ✓,所以提交前逐个槽看一眼:
+
+* 介绍截图 ×1(必填)、其它素材 ×3(选填)—— 总共 4 张 ✓
+* 就是 `harmony/docs/store-screenshots/` 里的 home / fabmenu / editor / whiteboard ✓
+* 4 张都是 2353×1324 的 16:9 ✓,重拍命令见
+  `harmony/toolchain/capture_store_screenshots.py` ✓
 
 ## 5. 版本信息文案(照抄 `harmony/docs/store-listing.md`)
 
@@ -80,8 +104,9 @@ AGC 控制台 →「应用管理」→ 选应用 →「版本管理」→「软�
 `harmony/docs/DEPLOY-RECORD.md`(两篇都要写),并重启轮询:
 
 ```bash
+pkill -f "agc_poll_review[.]sh"        # 先确保没有旧实例
 nohup env AGC_POLL_INTERVAL=300 bash harmony/toolchain/agc/agc_poll_review.sh >/dev/null 2>&1 &
-tail -f /tmp/agc_poll.log
+sleep 45; tail -20 /tmp/agc_poll.log
 ```
 
 > 轮询器**只能有一个实例** —— 两个进程会抢同一个浏览器标签页,互相把页面导航坏。
