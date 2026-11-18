@@ -101,8 +101,14 @@
 
 <p>同步功能是<strong>完全可选</strong>的,你可以永远不开启。开启后:</p>
 <ul>
-  <li>服务器地址、用户名、密码<strong>由你自己填写</strong>,保存在设备的加密安全存储中
-      (HarmonyOS 系统提供的安全存储能力),不会明文落盘;</li>
+  <li>服务器地址、用户名、密码<strong>由你自己填写</strong>,保存在<strong>本应用的私有目录</strong>
+      (HarmonyOS 应用沙箱)里,不会上传、也不会同步到任何服务器;沙箱隔离保证其它应用读不到它们。</li>
+  <li>技术说明(如实告知):本 HarmonyOS 版本目前是把上述凭据以及本机的
+      <strong>笔记加密密钥</strong>放在应用私有目录中保存,<strong>尚未</strong>
+      接入鸿蒙的硬件密钥托管服务(HUKS),因此它们在本机<strong>不是</strong>
+      硬件加密存放的;后续版本会改用 HUKS 加密保存。
+      上面的「应用沙箱隔离」是当前实际生效的保护措施。
+      (笔记密钥在服务器上的副本由你设置的「笔记加密口令」加密保护 ✓)</li>
   <li>笔记在上传前会<strong>用随机密钥加密</strong>,服务端保存的是密文;</li>
   <li>数据只在<strong>你自己的 Nextcloud 服务器</strong>与你的设备之间传输 ——
       我们没有、也拿不到你的服务器地址和账号密码;</li>
@@ -150,7 +156,13 @@ default. We collect <strong>no personal information</strong>, ship <strong>no ad
 analytics SDK</strong>, and do <strong>not collect crash logs</strong>. The app requests a
 single permission, <code>ohos.permission.INTERNET</code>, which is used only if you
 opt in to Nextcloud sync. With sync enabled, the server URL and credentials are kept in
-the device's secure storage and your notes are encrypted with a random key before upload;
+the app's private directory (protected by HarmonyOS app sandboxing, and never uploaded or synced
+to any server we can reach), and your notes are encrypted with a random key before upload.
+For the record: this HarmonyOS build stores those credentials in the app's private directory and
+does <em>not</em> yet use the HarmonyOS hardware key service (HUKS), so neither they nor the local
+copy of your note-encryption key are hardware-encrypted at rest; a later release will move both
+to HUKS. (The copy of the note-encryption key stored on your own server is protected by the
+encryption password you set.)
 the data travels only between your device and the Nextcloud server you chose. Uninstalling
 the app deletes all local data.</p>
 
