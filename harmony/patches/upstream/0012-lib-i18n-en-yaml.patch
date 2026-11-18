@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/en.i18n.yaml b/lib/i18n/en.i18n.yaml
-index 02b738d..039d22a 100644
+index 02b738d8..937be681 100644
 --- a/lib/i18n/en.i18n.yaml
 +++ b/lib/i18n/en.i18n.yaml
 @@ -20,8 +20,9 @@ home:
@@ -98,7 +98,7 @@ index 02b738d..039d22a 100644
      - q: Can I use the same password as my Nextcloud account?
        a: Yes, but keep in mind that it would be easier for the server administrator or someone else to access your notes if they gain access to your Nextcloud account.
  profile:
-@@ -241,21 +247,23 @@ profile:
+@@ -241,21 +247,22 @@ profile:
    - q: Will I lose my notes if I log out?
      a: No. Your notes will remain both on your device and on the server. They won't be synced with the server until you log back in. Make sure syncing is complete before logging out so you don't lose any data (see the sync progress on the home screen).
    - q: How do I change my Nextcloud password?
@@ -123,11 +123,10 @@ index 02b738d..039d22a 100644
  appInfo:
    licenseNotice: |-
 +    赛博手写笔记 — built on the open-source Saber project
-+    赛博手写笔记 — built on the open-source Saber project
      Saber  Copyright © 2022-$buildYear  Adil Hanney
      This program comes with absolutely no warranty. This is free software, and you are welcome to redistribute it under certain conditions.
    debug: DEBUG
-@@ -363,7 +371,7 @@ editor:
+@@ -363,7 +370,7 @@ editor:
      watchingServer: You are currently watching for updates on the server. Editing is disabled in this mode.
      corrupted: Failed to load note. It may be corrupted or still being downloaded.
    versionTooNew:

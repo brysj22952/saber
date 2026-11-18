@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/zh-Hans-CN.i18n.yaml b/lib/i18n/zh-Hans-CN.i18n.yaml
-index 8f15700..d85a6d7 100644
+index 8f157000..d8373ef4 100644
 --- a/lib/i18n/zh-Hans-CN.i18n.yaml
 +++ b/lib/i18n/zh-Hans-CN.i18n.yaml
 @@ -20,8 +20,9 @@ home:
@@ -98,7 +98,7 @@ index 8f15700..d85a6d7 100644
      - q: 我可以使用与我的 Nextcloud 帐户相同的密码吗？
        a: 是的，但请记住，如果服务器管理员或其他人可以访问您的 Nextcloud 帐户，他们将更容易访问您的笔记。
  profile:
-@@ -241,21 +247,23 @@ profile:
+@@ -241,21 +247,22 @@ profile:
    - q: 如果我注销，我的笔记会丢失吗？
      a: 不会。您的笔记将保留在您的设备和服务器上。在您重新登录之前，它们不会与服务器同步。请确保在注销前完成同步，以免丢失任何数据（请在主屏幕上查看同步进度）。
    - q: 如何更改我的 Nextcloud 密码？
@@ -123,11 +123,10 @@ index 8f15700..d85a6d7 100644
  appInfo:
    licenseNotice: |-
 +    赛博手写笔记 —— 基于开源项目 Saber 开发
-+    赛博手写笔记 —— 基于开源项目 Saber 开发
      Saber  版权所有 © 2022-$buildYear  Adil Hanney
      本程序不附带任何担保。这是自由软件，您可以在特定条件下重新分发它。
    debug: DEBUG
-@@ -363,7 +371,7 @@ editor:
+@@ -363,7 +370,7 @@ editor:
      watchingServer: 当前正在监视服务器的更新，此模式下编辑功能已禁用。
      corrupted: 无法加载笔记。它可能已损坏或仍在下载中。
    versionTooNew:

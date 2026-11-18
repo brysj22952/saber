@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_zh_Hans_CN.g.dart b/lib/i18n/strings_zh_Hans_CN.g.dart
-index 3eb1c01..9a5747d 100644
+index 3eb1c018..f9060ccd 100644
 --- a/lib/i18n/strings_zh_Hans_CN.g.dart
 +++ b/lib/i18n/strings_zh_Hans_CN.g.dart
 @@ -69,8 +69,9 @@ class Translations$home$zh_Hans_CN extends Translations$home$en {
@@ -27,7 +27,7 @@ index 3eb1c01..9a5747d 100644
  
  	// Translations
 -	@override String licenseNotice({required Object buildYear}) => 'Saber  版权所有 © 2022-${buildYear}  Adil Hanney\n本程序不附带任何担保。这是自由软件，您可以在特定条件下重新分发它。';
-+	@override String licenseNotice({required Object buildYear}) => '赛博手写笔记 —— 基于开源项目 Saber 开发\n赛博手写笔记 —— 基于开源项目 Saber 开发\nSaber  版权所有 © 2022-${buildYear}  Adil Hanney\n本程序不附带任何担保。这是自由软件，您可以在特定条件下重新分发它。';
++	@override String licenseNotice({required Object buildYear}) => '赛博手写笔记 —— 基于开源项目 Saber 开发\nSaber  版权所有 © 2022-${buildYear}  Adil Hanney\n本程序不附带任何担保。这是自由软件，您可以在特定条件下重新分发它。';
  	@override String get debug => 'DEBUG';
  	@override String get sponsorButton => '点击此处赞助我或购买更多存储空间';
  	@override String get licenseButton => '点击此处查看更多许可证信息';

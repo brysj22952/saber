@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_en.g.dart b/lib/i18n/strings_en.g.dart
-index ee9dcf9..4bc0f70 100644
+index ee9dcf9e..f2301f76 100644
 --- a/lib/i18n/strings_en.g.dart
 +++ b/lib/i18n/strings_en.g.dart
 @@ -79,11 +79,14 @@ class Translations$home$en {
@@ -34,7 +34,7 @@ index ee9dcf9..4bc0f70 100644
  
  	/// en: 'Saber Copyright © 2022-$buildYear Adil Hanney This program comes with absolutely no warranty. This is free software, and you are welcome to redistribute it under certain conditions.'
 -	String licenseNotice({required Object buildYear}) => 'Saber  Copyright © 2022-${buildYear}  Adil Hanney\nThis program comes with absolutely no warranty. This is free software, and you are welcome to redistribute it under certain conditions.';
-+	String licenseNotice({required Object buildYear}) => '赛博手写笔记 — built on the open-source Saber project\n赛博手写笔记 — built on the open-source Saber project\nSaber  Copyright © 2022-${buildYear}  Adil Hanney\nThis program comes with absolutely no warranty. This is free software, and you are welcome to redistribute it under certain conditions.';
++	String licenseNotice({required Object buildYear}) => '赛博手写笔记 — built on the open-source Saber project\nSaber  Copyright © 2022-${buildYear}  Adil Hanney\nThis program comes with absolutely no warranty. This is free software, and you are welcome to redistribute it under certain conditions.';
  
  	/// en: 'DEBUG'
  	String get debug => 'DEBUG';
