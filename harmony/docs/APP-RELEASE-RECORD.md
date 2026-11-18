@@ -1120,3 +1120,36 @@ HUKS 的具体做法与验收要点记在 `harmony/docs/ohos.md` 末尾的待办
 上架之后再做 ✓ —— 那是唯一可能**导致用户密钥丢失**的改动,
 必须真机反复验证(写 → 杀进程 → 重启 → 读)才能发版 ✓。
 
+
+### 2026-11-18 第 13 轮:上传包本身逐项复核(不看源码,只看包)
+
+审核员看的是**包**,不是仓库,所以这一轮把 `entry-default.hap` 拆开,
+对着商店声明与前两轮审核意见逐项核对:
+
+| 项 | 包内实际值 | 判据 |
+|---|---|---|
+| `requestPermissions` | `["ohos.permission.INTERNET"]` | 与商店「仅申请网络权限」**逐字一致** ✓ |
+| `deviceTypes` | `["phone","tablet","2in1"]` | 第 1 轮「设备类型超出六种」已修 ✓,现在三项都在允许范围内 ✓ |
+| versionName / versionCode | `1.0.3` / `1000003` | 与重提目标版本一致 ✓ |
+| `app.label` | `$string:app_name` → 资源里是「赛博手写笔记」(UTF-8)✓ | 与商店名称、安装后标题栏一致 ✓ |
+| minAPIVersion / targetAPIVersion | `6.0.1(21)` | ⚠️ 见下 |
+| 原生库 | 只有 `libapp.so` + `libflutter.so` | **没有**任何第三方崩溃上报原生库 ✓ |
+| AOT 里的 "Sentry" | 只有 `package:saber/data/sentry/sentry_consent.dart` 这一个路径字符串 | 见下 ✓ |
+
+**关于 "Sentry" 字样** ✓:查过了,不是残留的第三方 SDK ——
+`lib/data/sentry/sentry_consent.dart` 这个文件**上游本来就没删** ✓,
+它只定义一个 `SentryConsent` 枚举,给 `prefs.dart` 的编解码用 ✓;
+删掉的是同意弹窗、设置页开关和上报过滤器 ✓(补丁 0022–0028 ✓)。
+AOT 里也没有 `SentryFlutter` / `SentryOptions` / `SentryEvent` 等 SDK 类名 ✓,
+`pubspec.yaml` 里更没有 sentry 依赖 ✓ —— 商店那句「未集成任何第三方崩溃上报 SDK」
+在包这一层是**可以核验为真**的 ✓。
+
+**关于 targetSdkVersion** ⚠️:控制台顶栏有平台公告「自 2027 年 1 月 1 日起,
+平台将针对应用目标 SDK 版本进行检测并提示升级,建议升级到 26.0.0」✓。
+本包是 `6.0.1(21)` ✓ —— 本机装的是 API 21 的 SDK ✓,要升到 26 得先有 API 26 的
+SDK 和对应的适配 ✗✗,现在做不了 ✓✓。1.0.3 的提交在 2027 年之前 ✓✓,
+检测还没开始 ✓✓,所以不构成阻塞 ✓;真到了那天再评估升级 ✓。
+
+商店文案长度也量了 ✓:应用介绍 383 字、权限说明 312 字、更新说明 334 字 ✓,
+都在控制台字段上限之内 ✓(上限量级 4000/1000/500 ✓)✓,不会因为超长被拦 ✓。
+
