@@ -44,8 +44,8 @@ AGC 控制台 →「应用管理」→ 选应用 →「版本管理」→「软�
 
 | 槽位 | 路径 | 传这个 |
 |---|---|---|
-| 审核附件 | 版本页 → 审核附件 | `harmony/docs/store-materials/saber-open-source-audit.zip`(567,960 字节) |
-| 授权书及其他材料 | 版本信息 → 版权信息 → 授权书及其他材料 | `harmony/docs/store-materials/授权材料.zip`(553,601 字节,内含两份 PDF) |
+| 审核附件 | 版本页 → 审核附件 | `harmony/docs/store-materials/saber-open-source-audit.zip`(590,405 字节) |
+| 授权书及其他材料 | 版本信息 → 版权信息 → 授权书及其他材料 | `harmony/docs/store-materials/授权材料.zip`(575,954 字节,内含两份 PDF) |
 
 > 「授权书及其他材料」收的是 **zip**(≤200M),压缩包里的文件限 JPG/JPEG/BMP 与 PDF
 > —— 控制台原文就是这么写的,第 8 轮核对过 ✓。
