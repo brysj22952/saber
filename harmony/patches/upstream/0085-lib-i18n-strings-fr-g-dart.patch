@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_fr.g.dart b/lib/i18n/strings_fr.g.dart
-index 85e8e150..12ea4b64 100644
+index 85e8e150..5ed2230b 100644
 --- a/lib/i18n/strings_fr.g.dart
 +++ b/lib/i18n/strings_fr.g.dart
 @@ -69,7 +69,7 @@ class _Translations$home$fr extends Translations$home$en {
@@ -38,7 +38,7 @@ index 85e8e150..12ea4b64 100644
  	@override String get otherNcServer => 'Autre serveur Nextcloud';
  	@override String get serverUrl => 'Adresse du serveur';
 -	@override String get loginWithSaber => 'Se connecter avec Saber';
-+	@override String get loginWith赛博手写笔记 => 'Se connecter avec 赛博手写笔记';
++	@override String get loginWithSaber => 'Se connecter avec 赛博手写笔记';
  	@override String get loginWithNextcloud => 'Se connecter avec Nextcloud';
  	@override late final _Translations$login$ncLoginStep$loginFlow$fr loginFlow = _Translations$login$ncLoginStep$loginFlow$fr._(_root);
  }
@@ -47,7 +47,7 @@ index 85e8e150..12ea4b64 100644
  	// Translations
  	@override String get enterEncPassword => 'Pour protéger vos données, saisissez votre mot de passe de chiffrement :';
 -	@override String get newToSaber => 'Nouveau sur Saber ? Entrez simplement un nouveau mot de passe de chiffrement.';
-+	@override String get newTo赛博手写笔记 => 'Nouveau sur 赛博手写笔记 ? Entrez simplement un nouveau mot de passe de chiffrement.';
++	@override String get newToSaber => 'Nouveau sur 赛博手写笔记 ? Entrez simplement un nouveau mot de passe de chiffrement.';
  	@override String get encPassword => 'Mot de passe de chiffrement';
  	@override String get encFaqTitle => 'Foire aux questions';
  	@override String get wrongEncPassword => 'Le décryptage a échoué avec le mot de passe fourni. Veuillez réessayer.';

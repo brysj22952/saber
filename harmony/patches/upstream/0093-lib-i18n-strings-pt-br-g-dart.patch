@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_pt_BR.g.dart b/lib/i18n/strings_pt_BR.g.dart
-index 7cb0a764..adfc3428 100644
+index 7cb0a764..d8ab092e 100644
 --- a/lib/i18n/strings_pt_BR.g.dart
 +++ b/lib/i18n/strings_pt_BR.g.dart
 @@ -70,7 +70,7 @@ class _Translations$home$pt_BR extends Translations$home$pt {
@@ -49,7 +49,7 @@ index 7cb0a764..adfc3428 100644
  	@override String get whereToStoreData => 'Escolha onde deseja armazenar seus dados:';
  	@override String get otherNcServer => 'Outro servidor Nextcloud';
 -	@override String get loginWithSaber => 'Faça login com Saber';
-+	@override String get loginWith赛博手写笔记 => 'Faça login com 赛博手写笔记';
++	@override String get loginWithSaber => 'Faça login com 赛博手写笔记';
  	@override String get loginWithNextcloud => 'Faça login com Nextcloud';
  }
  
@@ -58,7 +58,7 @@ index 7cb0a764..adfc3428 100644
  	@override String get encFaqTitle => 'Perguntas frequentes';
  	@override String get enterEncPassword => 'Para proteger seus dados, digite sua senha de criptografia:';
 -	@override String get newToSaber => 'Novo no Saber';
-+	@override String get newTo赛博手写笔记 => 'Novo no 赛博手写笔记';
++	@override String get newToSaber => 'Novo no 赛博手写笔记';
  	@override String get encPassword => 'Senha de criptografia';
  	@override String get wrongEncPassword => 'A descriptografia falhou com a senha fornecida. Por favor, tente inseri-lo novamente.';
  	@override String get connectionFailed => 'Algo deu errado ao conectar-se ao servidor. Por favor, tente novamente mais tarde.';

@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_zh_Hant_TW.g.dart b/lib/i18n/strings_zh_Hant_TW.g.dart
-index 1fc34cec..b601a5ec 100644
+index 1fc34cec..02942126 100644
 --- a/lib/i18n/strings_zh_Hant_TW.g.dart
 +++ b/lib/i18n/strings_zh_Hant_TW.g.dart
 @@ -69,7 +69,7 @@ class Translations$home$zh_Hant_TW extends Translations$home$en {
@@ -47,7 +47,7 @@ index 1fc34cec..b601a5ec 100644
  	@override String get otherNcServer => '其他 Nextcloud 伺服器';
  	@override String get serverUrl => '伺服器網址';
 -	@override String get loginWithSaber => '使用 Saber 登入';
-+	@override String get loginWith赛博手写笔记 => '使用 赛博手写笔记 登入';
++	@override String get loginWithSaber => '使用 赛博手写笔记 登入';
  	@override String get loginWithNextcloud => '使用 Nextcloud 登入';
  	@override late final Translations$login$ncLoginStep$loginFlow$zh_Hant_TW loginFlow = Translations$login$ncLoginStep$loginFlow$zh_Hant_TW.internal(_root);
  }
@@ -56,7 +56,7 @@ index 1fc34cec..b601a5ec 100644
  	// Translations
  	@override String get enterEncPassword => '為了保護您的資料，請輸入您的加密密碼：';
 -	@override String get newToSaber => '第一次使用 Saber？只需輸入新的加密密碼即可。';
-+	@override String get newTo赛博手写笔记 => '第一次使用 赛博手写笔记？只需輸入新的加密密碼即可。';
++	@override String get newToSaber => '第一次使用 赛博手写笔记？只需輸入新的加密密碼即可。';
  	@override String get encPassword => '加密密碼';
  	@override String get encFaqTitle => '常見問題';
  	@override String get wrongEncPassword => '使用提供的密碼解密失敗。請嘗試再次輸入。';

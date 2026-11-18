@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_ca.g.dart b/lib/i18n/strings_ca.g.dart
-index b0d32921..96c9b04f 100644
+index b0d32921..43054e35 100644
 --- a/lib/i18n/strings_ca.g.dart
 +++ b/lib/i18n/strings_ca.g.dart
 @@ -69,7 +69,7 @@ class _Translations$home$ca extends Translations$home$en {
@@ -47,7 +47,7 @@ index b0d32921..96c9b04f 100644
  	@override String get otherNcServer => 'Un servidor Nextcloud';
  	@override String get serverUrl => 'URL del servidor';
 -	@override String get loginWithSaber => 'Inglesar amb Saber';
-+	@override String get loginWith赛博手写笔记 => 'Inglesar amb 赛博手写笔记';
++	@override String get loginWithSaber => 'Inglesar amb 赛博手写笔记';
  	@override String get loginWithNextcloud => 'Inglesar amb Nextcloud';
  }
  
@@ -56,7 +56,7 @@ index b0d32921..96c9b04f 100644
  	];
  	@override String get enterEncPassword => 'Per protegere i tuoi dati, inserisci la tua password di crittografia:';
 -	@override String get newToSaber => 'Nou en Saber? Simplement ingresa una nova contrasenya de cifratura.';
-+	@override String get newTo赛博手写笔记 => 'Nou en 赛博手写笔记? Simplement ingresa una nova contrasenya de cifratura.';
++	@override String get newToSaber => 'Nou en 赛博手写笔记? Simplement ingresa una nova contrasenya de cifratura.';
  	@override String get encPassword => 'contraseña de cifrado';
  	@override String get encFaqTitle => 'Preguntes freqüents';
  	@override String get wrongEncPassword => 'Descodificació fallada amb la contrasenya proporcionada. Si us plau, intenteu introduir-la de nou.';

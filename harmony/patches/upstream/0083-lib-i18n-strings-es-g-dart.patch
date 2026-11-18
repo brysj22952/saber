@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_es.g.dart b/lib/i18n/strings_es.g.dart
-index 5280c4d2..488619ee 100644
+index 5280c4d2..e8ab0805 100644
 --- a/lib/i18n/strings_es.g.dart
 +++ b/lib/i18n/strings_es.g.dart
 @@ -69,7 +69,7 @@ class _Translations$home$es extends Translations$home$en {
@@ -47,7 +47,7 @@ index 5280c4d2..488619ee 100644
  	@override String get otherNcServer => 'Otro servidor Nextcloud';
  	@override String get serverUrl => 'URL del servidor';
 -	@override String get loginWithSaber => 'Iniciar sesión con Saber';
-+	@override String get loginWith赛博手写笔记 => 'Iniciar sesión con 赛博手写笔记';
++	@override String get loginWithSaber => 'Iniciar sesión con 赛博手写笔记';
  	@override String get loginWithNextcloud => 'Iniciar sesión con Nextcloud';
  }
  
@@ -56,7 +56,7 @@ index 5280c4d2..488619ee 100644
  	// Translations
  	@override String get enterEncPassword => 'Para proteger sus datos, ingrese su contraseña de cifrado:';
 -	@override String get newToSaber => 'Nuevo en Saber';
-+	@override String get newTo赛博手写笔记 => 'Nuevo en 赛博手写笔记';
++	@override String get newToSaber => 'Nuevo en 赛博手写笔记';
  	@override String get encPassword => 'Contraseña de cifrado';
  	@override String get encFaqTitle => 'Preguntas frecuentes';
  	@override String get wrongEncPassword => 'El descifrado falló con la contraseña proporcionada. Intente ingresarlo nuevamente.';

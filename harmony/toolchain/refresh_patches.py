@@ -80,6 +80,13 @@ def main() -> None:
                 target = PATCH_DIR / name
                 break
         if target is None:
+            # 按补丁头里的文件路径认领:同一个上游文件只能有一个补丁
+            for cand in sorted(PATCH_DIR.glob("*.patch")):
+                head = cand.read_text(encoding="utf-8").split("\n")[:6]
+                if any(line.startswith("+++ b/" + path) for line in head):
+                    target = cand
+                    break
+        if target is None:
             if check:
                 print(f"  [待建] {path} -> {next_num:04d}-{slug(path)}.patch")
                 next_num += 1

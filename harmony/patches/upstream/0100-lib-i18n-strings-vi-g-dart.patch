@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_vi.g.dart b/lib/i18n/strings_vi.g.dart
-index c32f74d1..e1f06899 100644
+index c32f74d1..1992cf5c 100644
 --- a/lib/i18n/strings_vi.g.dart
 +++ b/lib/i18n/strings_vi.g.dart
 @@ -69,7 +69,7 @@ class _Translations$home$vi extends Translations$home$en {
@@ -38,19 +38,10 @@ index c32f74d1..e1f06899 100644
  	@override String get otherNcServer => 'Các máy chủ Nextcloud khác';
  	@override String get serverUrl => 'Đường dẫn máy chủ';
 -	@override String get loginWithSaber => 'Đăng nhập bằng Saber';
-+	@override String get loginWith赛博手写笔记 => 'Đăng nhập bằng 赛博手写笔记';
++	@override String get loginWithSaber => 'Đăng nhập bằng 赛博手写笔记';
  	@override String get loginWithNextcloud => 'Đăng nhập bằng Nextcloud';
  	@override late final _Translations$login$ncLoginStep$loginFlow$vi loginFlow = _Translations$login$ncLoginStep$loginFlow$vi._(_root);
  }
-@@ -598,7 +598,7 @@ class _Translations$login$encLoginStep$vi extends Translations$login$encLoginSte
- 
- 	// Translations
- 	@override String get enterEncPassword => 'Để bảo vệ dữ liệu của bạn, hãy nhập mật khẩu bạn muốn sử dụng để mã hóa chúng:';
--	@override String get newToSaber => 'Người mới tới? Bạn chỉ cần nhập một mật khẩu mã hóa mới.';
-+	@override String get newTo赛博手写笔记 => 'Người mới tới? Bạn chỉ cần nhập một mật khẩu mã hóa mới.';
- 	@override String get encPassword => 'Mật khẩu mã hóa';
- 	@override String get encFaqTitle => 'Các câu hỏi thường gặp';
- 	@override String get wrongEncPassword => 'Không thể giải mã với khóa mã hóa được cung cấp. Hãy nhập lại.';
 @@ -640,7 +640,7 @@ class _Translations$profile$faq$1$vi extends Translations$profile$faq$1$en {
  
  	// Translations

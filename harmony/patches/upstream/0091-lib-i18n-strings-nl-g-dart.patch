@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_nl.g.dart b/lib/i18n/strings_nl.g.dart
-index 858364e5..8d9d4070 100644
+index 858364e5..f04c302c 100644
 --- a/lib/i18n/strings_nl.g.dart
 +++ b/lib/i18n/strings_nl.g.dart
 @@ -69,7 +69,7 @@ class _Translations$home$nl extends Translations$home$en {
@@ -38,7 +38,7 @@ index 858364e5..8d9d4070 100644
  	@override String get otherNcServer => 'Andere Nextcloud server';
  	@override String get serverUrl => 'Server URL';
 -	@override String get loginWithSaber => 'Inloggen met Saber';
-+	@override String get loginWith赛博手写笔记 => 'Inloggen met 赛博手写笔记';
++	@override String get loginWithSaber => 'Inloggen met 赛博手写笔记';
  	@override String get loginWithNextcloud => 'Inloggen met Nextcloud';
  	@override late final _Translations$login$ncLoginStep$loginFlow$nl loginFlow = _Translations$login$ncLoginStep$loginFlow$nl._(_root);
  }
@@ -47,7 +47,7 @@ index 858364e5..8d9d4070 100644
  	// Translations
  	@override String get enterEncPassword => 'Om uw gegevens te beschermen, geef hier uw versleutelingswachtwoord op:';
 -	@override String get newToSaber => 'Nieuw bij Saber? Bedenk gewoon een nieuw wachtwoord.';
-+	@override String get newTo赛博手写笔记 => 'Nieuw bij 赛博手写笔记? Bedenk gewoon een nieuw wachtwoord.';
++	@override String get newToSaber => 'Nieuw bij 赛博手写笔记? Bedenk gewoon een nieuw wachtwoord.';
  	@override String get encPassword => 'Versleutelingswachtwoord';
  	@override String get encFaqTitle => 'Vaak gevraagd';
  	@override String get wrongEncPassword => 'Ontsleuteling gefaald met gegeven wachtwoord, probeer opnieuw.';

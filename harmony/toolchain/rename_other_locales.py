@@ -47,16 +47,19 @@ KEEP_KEYS = ("openDataDir", "customDataDir")
 KEEP_CONTAINS = "adilhanney@disroot.org"
 
 
-def replace_in_value(line: str) -> tuple[str, bool]:
+def replace_in_value(line: str, sep: str = ":") -> tuple[str, bool]:
     """只替换「值」里的 Saber,不动键名(键名如 loginWithSaber 是内部标识符)。
 
-    注意:块标量(|-)的续行常常整行都没有冒号,那整行都是「值」。
+    注意两点:
+      * 块标量(|-)的续行常常整行都没有冒号,那整行都是「值」;
+      * 生成出来的 Dart 代码里,键和值之间是 `=>` 而不是 `:` ——
+        按 `:` 切会把 getter 名也换掉,编译期直接报「非 ASCII 字符不能用在标识符里」。
     """
-    idx = line.find(":")
+    idx = line.find(sep)
     if idx < 0:
         head, value = "", line
     else:
-        head, value = line[: idx + 1], line[idx + 1 :]
+        head, value = line[: idx + len(sep)], line[idx + len(sep) :]
     if "Saber" not in value:
         return line, False
     # 德语等语言的属格 "Sabers" → "赛博手写笔记",别留下一个孤零零的 s
@@ -160,7 +163,7 @@ def process_generated(path: Path, check: bool) -> int:
             if re.match(r"^2[.)]\s", stripped):
                 new_parts.append(part)
                 continue
-            new_part, did = replace_in_value(part)
+            new_part, did = replace_in_value(part, sep="=>")
             changed = changed or did
             new_parts.append(new_part)
         if changed:

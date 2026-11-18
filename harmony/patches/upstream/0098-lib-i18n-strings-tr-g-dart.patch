@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_tr.g.dart b/lib/i18n/strings_tr.g.dart
-index 60553976..c96d8962 100644
+index 60553976..5bfc9f64 100644
 --- a/lib/i18n/strings_tr.g.dart
 +++ b/lib/i18n/strings_tr.g.dart
 @@ -69,7 +69,7 @@ class _Translations$home$tr extends Translations$home$en {
@@ -47,7 +47,7 @@ index 60553976..c96d8962 100644
  	@override String get otherNcServer => 'Diğer Nextcloud sunucusu';
  	@override String get serverUrl => 'Sunucu URL\'i';
 -	@override String get loginWithSaber => 'Saber ile giriş yap';
-+	@override String get loginWith赛博手写笔记 => '赛博手写笔记 ile giriş yap';
++	@override String get loginWithSaber => '赛博手写笔记 ile giriş yap';
  	@override String get loginWithNextcloud => 'Nextcloud ile giriş yap';
  	@override late final _Translations$login$ncLoginStep$loginFlow$tr loginFlow = _Translations$login$ncLoginStep$loginFlow$tr._(_root);
  }
@@ -56,7 +56,7 @@ index 60553976..c96d8962 100644
  	// Translations
  	@override String get enterEncPassword => 'Verilerinizi korumak için lütfen şifreleme parolanızı girin:';
 -	@override String get newToSaber => 'Saber\'da ilk seferiniz mi? Yeni bir şifreleme parolası girin.';
-+	@override String get newTo赛博手写笔记 => '赛博手写笔记\'da ilk seferiniz mi? Yeni bir şifreleme parolası girin.';
++	@override String get newToSaber => '赛博手写笔记\'da ilk seferiniz mi? Yeni bir şifreleme parolası girin.';
  	@override String get encPassword => 'Şifreleme parolası';
  	@override String get encFaqTitle => 'Sıkça sorulan sorular';
  	@override String get wrongEncPassword => 'Verilen parola ile şifre çözülemedi. Lütfen parolayı tekrar girin.';

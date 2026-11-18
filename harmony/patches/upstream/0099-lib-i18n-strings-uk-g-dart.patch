@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_uk.g.dart b/lib/i18n/strings_uk.g.dart
-index d7d5bd3b..9c00b3dc 100644
+index d7d5bd3b..500ea536 100644
 --- a/lib/i18n/strings_uk.g.dart
 +++ b/lib/i18n/strings_uk.g.dart
 @@ -69,7 +69,7 @@ class _Translations$home$uk extends Translations$home$en {
@@ -47,7 +47,7 @@ index d7d5bd3b..9c00b3dc 100644
  	@override String get otherNcServer => 'Інший сервер Nextcloud';
  	@override String get serverUrl => 'URL сервера';
 -	@override String get loginWithSaber => 'Увійти через Saber';
-+	@override String get loginWith赛博手写笔记 => 'Увійти через 赛博手写笔记';
++	@override String get loginWithSaber => 'Увійти через 赛博手写笔记';
  	@override String get loginWithNextcloud => 'Увійти через Nextcloud';
  }
  
@@ -56,7 +56,7 @@ index d7d5bd3b..9c00b3dc 100644
  	];
  	@override String get enterEncPassword => 'Для захисту ваших даних, будь ласка, введіть ваш пароль шифрування:';
 -	@override String get newToSaber => 'Нова у Saber? Просто введіть новий пароль шифрування.';
-+	@override String get newTo赛博手写笔记 => 'Нова у 赛博手写笔记? Просто введіть новий пароль шифрування.';
++	@override String get newToSaber => 'Нова у 赛博手写笔记? Просто введіть новий пароль шифрування.';
  	@override String get encPassword => 'Пароль шифрування';
  	@override String get encFaqTitle => 'Часті запитання';
  	@override String get wrongEncPassword => 'Дешифрування не вдалося з наданим паролем. Будь ласка, спробуйте ввести його ще раз.';

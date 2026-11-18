@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_th.g.dart b/lib/i18n/strings_th.g.dart
-index dbdbba13..7d7c45e2 100644
+index dbdbba13..61f86ab1 100644
 --- a/lib/i18n/strings_th.g.dart
 +++ b/lib/i18n/strings_th.g.dart
 @@ -407,7 +407,7 @@ class _Translations$sentry$consent$th extends Translations$sentry$consent$en {
@@ -38,7 +38,7 @@ index dbdbba13..7d7c45e2 100644
  	@override String get otherNcServer => 'เซิร์ฟเวอร์ Nextcloud อื่นๆ';
  	@override String get serverUrl => 'URL เซิร์ฟเวอร์';
 -	@override String get loginWithSaber => 'เข้าสู่ระบบด้วย Saber';
-+	@override String get loginWith赛博手写笔记 => 'เข้าสู่ระบบด้วย 赛博手写笔记';
++	@override String get loginWithSaber => 'เข้าสู่ระบบด้วย 赛博手写笔记';
  	@override String get loginWithNextcloud => 'เข้าสู่ระบบด้วย Nextcloud';
  	@override late final _Translations$login$ncLoginStep$loginFlow$th loginFlow = _Translations$login$ncLoginStep$loginFlow$th._(_root);
  }
@@ -47,7 +47,7 @@ index dbdbba13..7d7c45e2 100644
  	// Translations
  	@override String get enterEncPassword => 'เพื่อปกป้องข้อมูลของคุณ โปรดป้อนรหัสผ่านเข้ารหัสของคุณ:';
 -	@override String get newToSaber => 'เพิ่งเคยใช้ Saber ใช่ไหม? เพียงแค่ป้อนรหัสผ่านเข้ารหัสใหม่';
-+	@override String get newTo赛博手写笔记 => 'เพิ่งเคยใช้ 赛博手写笔记 ใช่ไหม? เพียงแค่ป้อนรหัสผ่านเข้ารหัสใหม่';
++	@override String get newToSaber => 'เพิ่งเคยใช้ 赛博手写笔记 ใช่ไหม? เพียงแค่ป้อนรหัสผ่านเข้ารหัสใหม่';
  	@override String get encPassword => 'เข้ารหัส รหัสผ่าน';
  	@override String get encFaqTitle => 'คำถามที่พบบ่อย';
  	@override String get wrongEncPassword => 'ถอดรหัสล้มเหลวด้วยรหัสผ่านที่ให้มา โปรดลองป้อนรหัสผ่านอีกครั้ง';

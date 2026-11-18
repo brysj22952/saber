@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_eo.g.dart b/lib/i18n/strings_eo.g.dart
-index 36ff5f96..bdc4acb9 100644
+index 36ff5f96..471e1797 100644
 --- a/lib/i18n/strings_eo.g.dart
 +++ b/lib/i18n/strings_eo.g.dart
 @@ -69,7 +69,7 @@ class _Translations$home$eo extends Translations$home$en {
@@ -38,19 +38,10 @@ index 36ff5f96..bdc4acb9 100644
  	@override String get otherNcServer => 'Aliaj Nextcloud-serviloj';
  	@override String get serverUrl => 'Retadreso de servilo';
 -	@override String get loginWithSaber => 'Ensalutu per Saber-konto';
-+	@override String get loginWith赛博手写笔记 => 'Ensalutu per 赛博手写笔记-konto';
++	@override String get loginWithSaber => 'Ensalutu per 赛博手写笔记-konto';
  	@override String get loginWithNextcloud => 'Ensalutu per Nextcloud-konto';
  	@override late final _Translations$login$ncLoginStep$loginFlow$eo loginFlow = _Translations$login$ncLoginStep$loginFlow$eo._(_root);
  }
-@@ -598,7 +598,7 @@ class _Translations$login$encLoginStep$eo extends Translations$login$encLoginSte
- 
- 	// Translations
- 	@override String get enterEncPassword => 'To protect your data, please enter your encryption password:';
--	@override String get newToSaber => 'Ĉu vi estas nova uzanto? Nur eniru novan ĉifradopasvorton';
-+	@override String get newTo赛博手写笔记 => 'Ĉu vi estas nova uzanto? Nur eniru novan ĉifradopasvorton';
- 	@override String get encPassword => 'Ĉifradopasvorto';
- 	@override String get encFaqTitle => 'Oftaj demandoj';
- 	@override String get wrongEncPassword => 'Malĉifrado per enigita pasvorto malsukcesis. Bonvolu enigi ĝin denove';
 @@ -640,7 +640,7 @@ class _Translations$profile$faq$1$eo extends Translations$profile$faq$1$en {
  
  	// Translations

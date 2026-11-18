@@ -1,5 +1,5 @@
 diff --git a/lib/i18n/strings_ar.g.dart b/lib/i18n/strings_ar.g.dart
-index 5841c16b..95a65ba7 100644
+index 5841c16b..ad086274 100644
 --- a/lib/i18n/strings_ar.g.dart
 +++ b/lib/i18n/strings_ar.g.dart
 @@ -471,7 +471,7 @@ class _Translations$settings$prefDescriptions$ar extends Translations$settings$p
@@ -20,7 +20,7 @@ index 5841c16b..95a65ba7 100644
  	@override String get otherNcServer => 'اخر Nextcloud خادم';
  	@override String get serverUrl => 'عنوان الخادم';
 -	@override String get loginWithSaber => 'Saber تسجيل الدخول باستخدام';
-+	@override String get loginWith赛博手写笔记 => '赛博手写笔记 تسجيل الدخول باستخدام';
++	@override String get loginWithSaber => '赛博手写笔记 تسجيل الدخول باستخدام';
  	@override String get loginWithNextcloud => 'Nextcloud تسجيل الدخول باستخدام';
  	@override late final _Translations$login$ncLoginStep$loginFlow$ar loginFlow = _Translations$login$ncLoginStep$loginFlow$ar._(_root);
  }
@@ -29,7 +29,7 @@ index 5841c16b..95a65ba7 100644
  	// Translations
  	@override String get enterEncPassword => 'لحماية بياناتك، يرجى إدخال كلمة مرور التشفير:';
 -	@override String get newToSaber => '؟ فقط أدخل كلمة مرور تشفير جديدةSaber جديد على';
-+	@override String get newTo赛博手写笔记 => '؟ فقط أدخل كلمة مرور تشفير جديدة赛博手写笔记 جديد على';
++	@override String get newToSaber => '؟ فقط أدخل كلمة مرور تشفير جديدة赛博手写笔记 جديد على';
  	@override String get encPassword => 'كلمة مرور التشفير';
  	@override String get encFaqTitle => 'الأسئلة الشائعة';
  	@override String get wrongEncPassword => 'فشل فك التشفير باستخدام كلمة المرور المقدمة. يرجى المحاولة مرة أخرى.';
