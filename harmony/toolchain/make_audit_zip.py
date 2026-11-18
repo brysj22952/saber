@@ -218,7 +218,7 @@ def cjk_to_pdf(text: str, path: str) -> None:
     pages, cur, y = [], [], margin
     for line, is_title in blocks:
         f = title_font if is_title else font
-        lh = 48 if is_title else 42
+        lh = 46 if is_title else 40
         if y + lh > height - margin:
             pages.append(cur)
             cur, y = [], margin
@@ -234,7 +234,7 @@ def cjk_to_pdf(text: str, path: str) -> None:
         for line, is_title in page:
             if line:
                 d.text((margin, y), line, fill="black", font=title_font if is_title else font)
-            y += 48 if is_title else 42
+            y += 46 if is_title else 40
         images.append(img)
     images[0].save(path, "PDF", resolution=150.0, save_all=True, append_images=images[1:])
 
