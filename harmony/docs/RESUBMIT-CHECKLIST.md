@@ -11,12 +11,29 @@
 tail -20 /tmp/agc_poll.log          # 轮询日志;出现「不通过」就是终态
 ```
 
+轮询器一旦看到「不通过」,会**自动把审核报告抓下来**(第 12 轮加的 ✓):
+报告正文在报告页里的 amp iframe 中,6 条问题分在 4 个 tab 上,
+脚本会逐个 tab 点开再读,所以拿到的是**全部 6 条** ✓。
+
+```bash
+ls -l /tmp/agc_audit_report_*.txt   # 被打回时会有这个文件
+cat /tmp/agc_audit_report_1.0.2.txt
+```
+
+> 报告页是新的标签页,`--raw` 之类的方式只能看到当前那个 tab 的一条,
+> 6 条问题会看不全 —— 用 `python3 harmony/toolchain/agc/agc_audit_report.py --out <文件>` 重抓。
+
 ## 1. 确认包还在、还是发布签名
 
 ```bash
 cd /root/hzq/saber-ohos/saber
 python3 harmony/toolchain/verify_app_package.py     # 期望:10 项通过 / 0 失败
+md5sum build/ohos/app/ohos-default-signed.app       # 期望:0094975e96179b44f0cff396702ce025
 ```
+
+> 上面那个 md5 是**第 12 轮重打的那个包**(24 个语言包改名之后重打的 ✓,
+> 10/10 通过 ✓,AOT 里查得到新名字、查不到旧的 "Welcome to Saber" ✓)。
+> 另有一份副本在 `/root/hzq/saber-ohos/release-artifacts/` ✓。
 
 如果包不在了,重新构建(**注意签名切换**):
 
@@ -115,7 +132,7 @@ sleep 45; tail -20 /tmp/agc_poll.log
 
 ```bash
 python3 harmony/toolchain/agc/agc_store_check.py \
-    --app-id <AGC APP ID> --name 赛博手写笔记
+    --app-id 6917621319756237551 --name 赛博手写笔记
 ```
 
 逐项核对,结论写进 `/tmp/agc_store_check.json`:
