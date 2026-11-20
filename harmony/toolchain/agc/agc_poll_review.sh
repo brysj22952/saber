@@ -57,6 +57,16 @@ self_test() {
   check APPROVED "$(classify_status '已上架')"         '已上架'
   check APPROVED "$(classify_status '已发布')"         '已发布'
   check APPROVED "$(classify_status '审核通过')"       '审核通过'
+  # 审核报告解析自测(纯函数级,不碰浏览器):确认报告页的 tab/pane 解析没退化,
+  # 尤其要能读到「应用资质」那条(历史上丢的就是它)。
+  if [ -f harmony/toolchain/agc/agc_audit_report.py ]; then
+    if python3 harmony/toolchain/agc/agc_audit_report.py --self-test >/tmp/agc_report_selftest.log 2>&1; then
+      printf '  ✓ %-28s -> %s\n' "审核报告解析自测" "通过"
+    else
+      printf '  ✗ %-28s -> %s\n' "审核报告解析自测" "失败(见 /tmp/agc_report_selftest.log)"
+      bad=1
+    fi
+  fi
   if [ "$bad" = 0 ]; then
     echo "状态判定自测全部通过 ✓"
   else
@@ -78,12 +88,33 @@ for i in $(seq 1 "${AGC_POLL_MAX:-1000}"); do
   case "$(classify_status "$status_line")" in
     REJECTED)
       echo "### 检测到被打回(状态:$status_line),正在抓取审核报告原文 ###" >> "$LOG"
-      # 被打回时自动把审核报告抓下来 —— 6 条问题分在报告页的 4 个 tab 上,
-      # 脚本会逐个 tab 点开读取,不用再手工点控制台。
+      # 被打回时自动把审核报告抓下来 —— 报告页的正文分在 amp iframe 的
+      # .el-tab-pane 里(隐藏的 pane 也有正文),脚本逐个 pane 读,
+      # 不用再手工点控制台。
+      #
+      # 2026-11-20 修:原来**无论抓取成功失败**都写「审核报告已保存到 ...」,
+      # 于是「抓空了」看起来像「抓到了」✗ —— 2026-11-18 就因此漏掉了
+      # 唯一的阻塞意见(「应用资质」那条)。现在按退出码 + 文件内容判定,
+      # 失败就把失败痕迹明确写进日志 ✓。
       ver=$(echo "$out" | sed -n 's/^版本: //p' | head -1)
       rep="/tmp/agc_audit_report_${ver:-unknown}.txt"
-      timeout 280 python3 harmony/toolchain/agc/agc_audit_report.py --out "$rep" >> "$LOG" 2>&1
-      echo "### 审核报告已保存到 $rep,轮询结束(需要人工按报告整改后重提) ###" >> "$LOG"
+      # 先删旧文件:否则这次抓取失败时,目录里还留着上一次的报告,会被当成「这次抓到了」
+      rm -f "$rep"
+      rep_args=(--out "$rep")
+      [ -n "${ver:-}" ] && rep_args+=(--version "$ver")
+      timeout 280 python3 harmony/toolchain/agc/agc_audit_report.py "${rep_args[@]}" >> "$LOG" 2>&1
+      rc=$?
+      if [ "$rc" -ne 0 ]; then
+        echo "### ⚠️ 审核报告抓取失败(agc_audit_report.py 退出码 $rc)—— 报告没有拿到,别当成「没有问题」 ###" >> "$LOG"
+        echo "### 目标文件: $rep(可能不存在或内容不完整,请按上面的错误信息排查) ###" >> "$LOG"
+        echo "### 轮询结束(需要人工按控制台上的审核报告原文整改后重提) ###" >> "$LOG"
+        break
+      fi
+      if [ ! -s "$rep" ]; then
+        echo "### ⚠️ 审核报告抓取失败(退出码 0 但输出文件为空)—— 报告没有拿到,别当成「没有问题」 ###" >> "$LOG"
+        echo "### 轮询结束(需要人工按控制台上的审核报告原文整改后重提) ###" >> "$LOG"
+        break
+      fi
       break ;;
     APPROVED)
       echo "### 检测到终态(状态:$status_line),轮询结束 ###" >> "$LOG"
