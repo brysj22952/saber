@@ -1011,3 +1011,208 @@ bash harmony/toolchain/agc/agc_poll_review.sh --self-test
 
 轮询器已重启(单实例 ✓,新实例从「第1次」重新计数 ✓)。
 
+
+### 2026-11-20:诊断「已达到输出 token 上限回答被截断」——是**单次输出上限**,不是上下文超限
+
+> 触发场景:用户在**上一个会话**里看到「已达到输出 token 上限,回答被截断」,
+> 于是 2026-11-18 06:44 新开会话(就是本会话),第一句话就是问原因 + 继续任务 ✓。
+> 本节是那件事的完整诊断结论 ✓。
+
+#### 一、会话与模型参数(全部来自会话文件本身)
+
+会话:`/root/.dsh/sessions/--root-hzq-saber-ohos--/session-9313aa75-ad90-4b1f-9bf0-a2562982b0b6/session.v4.jsonl.zstd`
+(5,681 行 JSONL,zstd 压缩,4.1 MB)
+
+| 项 | 值 | 证据 |
+|---|---|---|
+| provider / model | `minimax` / **`MiniMax-M3.1-Flash`** | `request/context` 记录(seq 19);`request/header` 的 `config` 段一致 ✓ |
+| **上下文窗口** | **262,144** | `request/context` 的 `contextWindow` 字段 ✓ |
+| **单次输出上限** | **32,768** | 两次被截断的响应 `outputTokens` **恰好等于** 32768 ✓ |
+| 配置来源 | `/root/.dsh/profiles/web/cordis.patch.yml` 第 1–15 行 | `llm-pi-ai` provider 段:`baseURL: https://api.minimaxi.com/v1`、`api: openai-completions` ✓ |
+
+#### 二、截断发生在哪个环节:**模型输出超限**,不是上下文超限
+
+判据是会话文件里的 `finish` chunk。三条硬证据:
+
+1. **`stopReason: "length"`** —— 全会话 1,070 条 assistant/message 里,
+   `stopReason` 分布是 `toolUse` 1,052 / `stop` 15 / **`length` 2** / 无 1;
+   `length` 就是「被输出上限切断」✓;
+2. **`finish.reason.kind = "max-tokens"`** —— 两条被截断的消息末尾的 chunk 原样:
+
+   ```json
+   {"type":"chunk","time":1794972563615,"chunk":{"type":"finish",
+     "reason":{"kind":"max-tokens"},
+     "replayState":{"response":{...,"stopReason":"length"},
+       "blocks":[{"type":"reasoning","thinkingSignature":"reasoning_content"}]}}}
+   ```
+
+   `blocks` 里**只有 `reasoning`,没有任何 `text`** ✓;
+3. **`outputTokens` 恰好 32,768** —— 两次都是,一个不多一个不少 ✓
+   (说明撞的是硬上限,不是「快满了就提前收」)。
+
+**上下文侧的数字(证明不是上下文超限)**:
+
+| 指标 | 实测峰值 | 上下文窗口 | 余量 |
+|---|---|---|---|
+| `totalTokens` 峰值 | **197,313** | 262,144 | 约 65K 未用 ✓ |
+| `cacheReadTokens` 峰值 | 195,920 | — | — |
+
+→ 上下文**远未超限** ✓。被截断那两条的 `totalTokens` 分别是 172,896 / 187,146 ✓,
+**都不到窗口的 72%** ✓。
+
+> 结论一句话:**上下文没满,是这一条响应自己写太长被卡了** ✓。
+
+#### 三、为什么用户看到的是「回答被截断而且正文一个字都没有」
+
+两条被截断的消息(seq 5591 / seq 5669)的 `content` **长度为 0 个 text 块**,
+只有 1 个 `reasoning` 块:
+
+| seq | 时间 | turn/step | outputTokens | content 构成 |
+|---|---|---|---|---|
+| 5591 | 2026-11-18 11:29:23 | turn 17 / step 12 | 32,768 | 仅 reasoning,**text 长度 0** ✓ |
+| 5669 | 2026-11-20 10:37:05 | turn 18 / step 15 | 32,768 | 仅 reasoning,**text 长度 0** ✓ |
+
+**机制**:模型把整整 32,768 token **全部烧在 reasoning(思考)上**,
+还没轮到写正文就被 `max-tokens` 切断 ✓。
+所以既没有正文、也没有工具调用 —— 用户那边表现为「回答被截断」,
+而实际上模型是在**思考阶段**就已经把预算用光了 ✓。
+
+#### 四、放大消耗的是 agent 的行为模式 —— reasoning 退化成重复循环
+
+这两条 reasoning 不是「内容多」,是**卡进了重复循环**。逐字统计:
+
+| seq | reasoning 字符数 | 词数 | 唯一词数 | 最热的 3 个 token |
+|---|---|---|---|---|
+| 5591 | 28,914 | 4,797 | **41** | `</invoke>` × **1,846**、`hmm` × **1,428**、`✗:` × **1,428** |
+| 5669 | 34,166 | 16,512 | **145** | `✗` × **16,076**(占 97%) |
+
+> seq 5591 的结尾是连续 1,846 个 `</invoke>` —— 模型在**反复尝试结束一段输出但结束不掉** ✗;
+> seq 5669 是 16,076 个 `✗` —— 在「这条对不对?不对 ✗」的自我怀疑里原地打转 ✗。
+> 两者都是**低信息量的自我对话**,把输出预算吃干,却一个字的有效结论都没产出 ✓。
+
+#### 五、会话层面的其它放大因素(有据可查的统计)
+
+**1) 单轮步数极高,工具调用几乎全是 bash**
+
+会话共 19 个 turn、1,071 个 step、1,108 次工具调用 ✓。按 turn 拆:
+
+| turn | step 数 | bash | 其它 | 工具结果总字符 |
+|---|---|---|---|---|
+| 1 | 111 | 113 | 13 read / 12 edit | 388,037 |
+| 6 | 96 | 85 | 5 edit / 5 read | 122,152 |
+| 8 | 77 | 63 | 7 read | 150,277 |
+| 12 | 122 | **113** | 5 read | 158,460 |
+| 13 | 101 | 88 | 6 read | 106,922 |
+| 17 | 12 | 8 | 3 grep | 59,917 |
+| 18 | 15 | 11 | 3 read | 21,171 |
+
+→ 工具调用总数 **931/1108 = 84%** 是 `bash` ✓,
+**单轮最多 122 步** ✓。一轮里连做几十步探索(改代码 → 构建 → 验收 → 写文档 → 再核对)
+**不切分**,是这条会话的基本形态 ✓。
+
+**2) 每步都把大段输出灌回上下文**
+
+工具结果平均每轮 5 万~39 万字符;最大的几条单个就有 **5 万字符**(seq 2561 / 2823 / 3396 / 5563)✓。
+每一条都完整进上下文 → 上下文迅速涨到 19 万 token 量级 ✓,
+**compaction 被触发 7 次**(每次压缩留下一份 `compaction/summary`,
+本会话 7 份 + 上一会话 17 份)✓。
+
+**3) 长轮询等待被塞进了对话**
+
+轮询间隔 300 秒,agent 用 `sleep` + `tail` 的后台任务去等,
+于是会话里出现大量 `background job ... finished [status: completed]` 的
+user/message 通知(seq 512 / 525 / 2128 / 2586 / 2664 / 2948 / 3102 / 4857 等)✓
+—— 每一条都带完整命令回显,几百到一千字符 ✓。
+
+**4) goal 自动续跑,把「一轮」拉得极长**
+
+`goal/change` 建了一个 `maxGoalRounds: 40` 的目标(第 643 seq),
+每次到点就自动注入一条 `<goal_round>` 的 user/message(1,173 字符),
+本会话共 19 个 turn 里 **12 个是 goal_round 自动触发** ✓。
+→ 用户根本没说话,agent 自己一轮接一轮往下跑,直到撞上输出上限 ✗。
+
+#### 六、结论与规避办法
+
+**结论**:
+
+> 「已达到输出 token 上限回答被截断」= **MiniMax-M3.1-Flash 的单次输出上限 32,768 被撞满** ✓。
+> 触发它的是 **reasoning 阶段陷入重复退化循环**(不是上下文超限 —— 上下文只用到 72%)✓。
+> 深层放大器是 agent 的行为模式:**单轮步数上百、84% 的 bash、无节制地把大段日志灌回上下文、
+> 长轮询用 sleep+tail 挂在对话里、goal 自动续跑不切分** ✓。
+
+**规避办法(按性价比排序)**:
+
+1. **单次任务切小** —— 一个 turn 只做一件事;探索 / 构建 / 写文档 / 核对不要连在一条回复里 ✓;
+   本会话 turn 12 一次干了 122 步,是典型的反例 ✓;
+2. **调低 reasoning 深度** —— MiniMax-M3.1-Flash 的思考预算可以在模型侧调小,
+   32,768 的输出预算里思考占得越多、正文剩得越少 ✓;
+   这次的两次截断 **100% 是思考占满、正文 0** ✓;
+3. **大输出改走「写文件 + 只回摘要」** —— 不把整段日志/整份报告贴回对话,
+   写进文件、回复里只给结论与路径 ✓
+   (本会话里 5 万字符级的工具结果有 4 条,全进了上下文 ✓);
+4. **轮询别挂在对话里** —— 用 `schedule` / 后台任务 + 一次性结论汇报,
+   不要每 5 分钟往对话里塞一条 `sleep`+`tail` 的完成通知 ✓;
+5. **goal 要设小** —— `maxGoalRounds: 40` 这种长目标容易把多轮串成一条超长链,
+   撞上同一个上限 ✓。
+
+#### 七、复现这次分析的命令(存档用)
+
+```bash
+# 1) 解压会话
+zstd -dc /root/.dsh/sessions/--root-hzq-saber-ohos--/\
+  session-9313aa75-ad90-4b1f-9bf0-a2562982b0b6/session.v4.jsonl.zstd > /tmp/s9313.jsonl
+
+# 2) 看 stopReason 分布 + 上下文/输出上限
+python3 - <<'PY'
+import json, collections
+stops=collections.Counter(); maxout=0; ctx=None
+for line in open('/tmp/s9313.jsonl',encoding='utf-8'):
+    o=json.loads(line)
+    if o.get('type')=='request/context': ctx=o['data']['contextWindow']
+    if o.get('type')=='assistant/message':
+        d=o['data']; u=d.get('usage') or {}
+        rs=(d['message'].get('source') or {}).get('replayState',{}).get('response',{})
+        stops[rs.get('stopReason')]+=1
+        maxout=max(maxout, u.get('outputTokens',0))
+print('contextWindow =', ctx, '| maxOutput =', maxout, '| stops =', dict(stops))
+PY
+
+# 3) 看两条被截断的消息的 finish chunk 与 reasoning 重复度
+#    (grep '"kind": "max-tokens"' 即可定位)
+```
+
+> 注:`agc_audit_report.py` 在这次也暴露了一个**同类坑** ——
+> 它按 `.el-tabs__item` 找报告页的 tab,但页面实际类名不同 → 只抓到 0 个 tab,
+> 「应用资质」那条**唯一的阻塞意见**被漏掉了 ✗(第 15 轮已用 `.el-tab-pane` 补抓 ✓)。
+> **教训一致**:能用结构化选择器读到的,就别靠「把整段文本灌回来再正则猜」 ✓。
+
+
+### 2026-11-20:远端 GitHub 凭据与 remote 配置体检(只报存在性与形态,不打印密钥值)
+
+| 项 | 结果 | 证据 |
+|---|---|---|
+| `.github-token` 存在? | ✅ 存在 | `/root/hzq/saber-ohos/.github-token`,54 字节,权限 `600` ✓ |
+| 文件格式 | `GITHUB_TOKEN=<ghp_ 前缀的 40 字符 PAT>`(正则整体匹配 ✓) | `grep -qE '^GITHUB_TOKEN=ghp_[A-Za-z0-9]{36}$'` 命中 ✓ |
+| 值前缀 | `ghp_`(GitHub 经典 personal access token 形态) | 只回显前 4 字符 ✓ |
+| 值长度 | 40 字符(`ghp_` + 36 位)✓ | 字符计数 ✓ |
+| remote `origin` | `https://github.com/saber-notes/saber.git`(**上游官方仓库**)✓ | `git remote -v` ✓ |
+| remote `fork` | `https://github.com/brysj22952/saber.git`(**本项目 fork**)✓ | 同上 ✓ |
+| URL 内嵌凭证? | ❌ 两个 remote 都是**干净 URL**,没有 `user:pass@` ✓ | 逐个脱敏比对 ✓ |
+| `credential.helper` | `store` —— 凭证存在 `/root/.git-credentials`(权限 `600`,主机 `github.com`,用户名 `brysj22952`)✓ | `git config --get-all credential.helper` ✓ |
+| 远端可达性 | `origin ls-remote` ✅ / `fork ls-remote` ✅ | 实测 ✓ |
+| 当前分支 | `feature/ohos-harmonyos`,跟踪 `fork/feature/ohos-harmonyos` ✓ | `git branch -vv` ✓ |
+| `main` 分支 | 落后 `origin/main` **30 个提交**(上游有更新,本地没合)⚠️ | `git branch -vv` ✓ |
+
+> ⚠️ 一个**安全细节**:明文 token 同时存在于两处 ——
+> `/root/hzq/saber-ohos/.github-token` 与 `/root/.git-credentials` ✓。
+> 两处权限都是 `600`、属主 root ✓,但 `.github-token` **没有任何脚本/配置引用它**
+> (全盘 grep `github-token` 无命中)→ 它是一个**手动备用的凭据副本**,
+> 实际推送走的是 `.git-credentials` 里的那个 ✓。
+>
+> **版本控制风险已核实:无** ✓ —— `git rev-parse` 在 `/root/hzq/saber-ohos`
+> 返回 `not a git repository`,也就是说**这个目录根本不是 git 工作区** ✓
+> (真正的 git 仓库在下一层 `/root/hzq/saber-ohos/saber` ✓),
+> 所以 `.github-token` **不会**被任何 `git add` 带走 ✓;
+> `saber` 仓库的 `.gitignore` 也不覆盖它(它不在仓库内)✓。
+> → 结论:可以留着当手工备用 ✓;但**不要**把它复制进 `saber/` 或任何会被打包/上传的目录 ✗✗
+> (商店上传包、`release-artifacts/` 都要小心 ✓)。
