@@ -1643,3 +1643,79 @@ bash harmony/toolchain/agc/agc_poll_review.sh --self-test
 
 **1.0.2 同样是发布签名**(`/tmp/build_102.log`「profile 类型: release,证书字段: distribution-certificate」)
 → **1.0.2 被驳回与签名无关** ✓。
+
+
+### 2026-11-20 补记 F:修 `agc_version_status.py` —— **连错标签页导致状态永远读成「未识别」**
+
+**症状**:查审核状态时,脚本一直输出
+
+```
+状态: 未识别(页面上没有状态关键词,可能不在版本页)
+```
+
+但控制台上明明是「1.0.2 待修改」—— 读不出来 ✗。
+
+**根因**:脚本用 `Frame(port)` 连页,而 `agc_console.CDP` 连的是
+`/json/list` 里的**第一个** page 标签 ✗。AGC 的标签页有多个
+(应用详情页 + 审核报告页 + 登录页…),
+**顺序一变就可能连到审核报告页** —— 那个页面**没有左侧栏、没有版本列表**,
+于是读不到「状态」二字 → 报「未识别」✗。
+
+**2026-11-20 的实测澄清**(Launch 做的干净实测,本会话独立复核 ✓):
+
+| 交互 | 会不会**新开**标签页 |
+|---|---|
+| 版本历史里的「**审核报告**」链接 | ✅ **会** —— 开在 `#/auditReportView` |
+| 「**软件包管理**」 | ❌ **不会** —— 标签页数恒为 3,点它只是**同一标签页内切换**顶层 hash(`.../myApp/…/v2079739086494559168` → `.../172249065903274627`)✓ |
+
+> ⇒ 知识库里**不要**写「软件包管理会开新标签页」(已更正,见 `71271f65`)✓。
+
+**改法**(给 `agc_version_status.py` 加按 URL 特征挑 target):
+
+```python
+def pick_app_target(port, match=None):
+    """挑「应用详情页」那个标签页 —— **不能假设都在主标签页**。"""
+    pages = [t for t in list_targets(port) if t.get("type") == "page" and t.get("url")]
+    if match:
+        picked = [t for t in pages if match in t["url"]]
+        if picked:
+            pages = picked
+    # 1) 优先应用详情页
+    for t in pages:
+        if "#/myApp/" in t["url"]:
+            return t
+    # 2) 退而求其次:有左侧栏(.item-text > 0)的页面
+    for t in pages:
+        if "auditReport" in t["url"]:
+            continue
+        ...
+    # 3) 兜底:第一个不是审核报告页的
+```
+
+然后 `Frame(port, target_id=target.get("id"))` 定向连 ✓,
+**所有重建 Frame 的地方都要带上 target_id** ✓
+(含 `_open_version_page()` 内部那个隐藏分支 —— 不带就会连回第一个 page ✗)。
+
+**还加了 `--match` 参数**:只考虑顶层 URL 含指定子串的标签页 ✓
+(例:`--match '#/myApp/'`)。连不到应用页时**明确报错**,
+而不是静默输出「未识别」✗ → 失败要留痕 ✓。
+
+**回归结果**:
+
+| 命令 | 结果 |
+|---|---|
+| `agc_version_status.py` | `版本: 1.0.2` / `状态: 待修改` ✓ **修好了** |
+| `agc_version_status.py --match '#/myApp/'` | 同上 ✓ |
+| `agc_version_status.py --match '#/auditReportView'` | `状态: 找不到应用详情页标签页(是不是登录态过期了?)` ✓ —— **明确拒绝**,不再假装读到了 ✓ |
+| `agc_version_status.py --raw` | 整页文本正常 ✓ |
+
+**两个脚本的标签页分工**(记清楚,别再混):
+
+| 脚本 | 目标标签页 | 做法 |
+|---|---|---|
+| `agc_audit_report.py` | 审核报告页 | **自己开新页**去读(报告链接会新开标签页)✓ |
+| `agc_version_status.py` | 应用详情页 | **按 URL 特征挑**(不是第一个)✓ |
+
+> 教训:**凡是「连浏览器」的脚本,都要先回答「我连的是哪个标签页」** ✓ ——
+> 这个问题的本质和「审核报告漏抓」是同一类:
+> **读到了某个页面 ≠ 读到了你以为的那个页面** ✓✓。
