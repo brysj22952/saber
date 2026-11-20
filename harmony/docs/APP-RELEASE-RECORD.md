@@ -1771,3 +1771,170 @@ Chrome 对 `display:none` 元素读 `innerText` 会回落到 `textContent`,所�
 - **.sba 预览**:要看到预览,得用**本版本新导出的 .sba**(带 `.p` 的那个)再测;旧 .sba 本来就没有预览文件。
 - **要彻底修 PDF**:需要另做 1.0.4 —— 在鸿蒙上**显式**把 `Editor.canRasterPdf` 设为 false(不依赖 printing 插件的异步结果)、
   把 SnackBar 换成对话框、并在「关于/设置」里写明不支持。成本 ≈ 改 1 个文件 + 重新构建签名 + 重新提审,**建议上架后再做**。
+
+
+### 2026-11-20 补记 A:1.0.2 上传包的签名**独立复核**(结论:发布签名)
+
+> 起因:Launch 在控制台「软件包管理」页看到 1.0.2 上传的包叫 `ohos-default-signed.app`,
+> 怀疑是**调试签名** —— 因为调试包与发布包**同名**,文件名不能作为判据 ✓。
+> 本节是**用签名材料本身**做的独立复核 ✓。
+
+**结论**:1.0.2 的包内 profile `type == "release"`,
+且与本机 `ohos/signing/app-release.p7b` **md5 完全一致** ✓
+→ **是发布签名,「调试签名」之说���成立** ✓✓。
+→ **签名不是 1.0.2 被驳回的原因** ✓。
+
+**取证过程**(1.0.2 的原始产物已被 1.0.3 覆盖,所以从 AGC 把原件下载回来验):
+
+```bash
+# 1) 从控制台「软件包管理」点「下载」把 1.0.2 原件取回来
+#    (CDP: Browser.setDownloadBehavior → /root/agc_dl)
+md5sum /root/agc_dl/ohos-default-signed.app
+# 9fd201c51f423433815d164744d309c7   (17,363,255 字节)
+
+# 2) verify-app 要对 .app 做(不是内层 hap),证书链用 .cer 后缀
+java -jar .../hap-sign-tool.jar verify-app \
+    -inFile /root/agc_dl/ohos-default-signed.app \
+    -outCertChain /tmp/v102_chain.cer -outProfile /tmp/v102_profile.p7b
+# → verify-app success ✓
+
+# 3) profile 是 DER 编码的 PKCS#7,要用 openssl smime 解包才能看到 JSON
+openssl smime -verify -noverify -in /tmp/v102_profile.p7b -inform DER -out /tmp/p.json
+```
+
+**四个 profile 的 type 对照表**:
+
+| profile | type | md5 |
+|---|---|---|
+| **1.0.2 包内**(AGC 下载的原件) | **release** | `be2ef81d43f70ed9423aab746a3853d4` |
+| 1.0.3 包内 | release | `be2ef81d43f70ed9423aab746a3853d4` |
+| `ohos/signing/app-release.p7b` | release | `be2ef81d43f70ed9423aab746a3853d4` |
+| `ohos/signing/app.p7b` | **debug** | `75fcf9472804a6c09d771bfe00699495` |
+
+**构建历史侧的旁证**(`/tmp/build_102.log`,1.0.2 那次构建):
+
+```
+==> 4.5/5 校验 profile 与证书是否匹配
+    profile 类型: release,证书字段: distribution-certificate
+    profile 的 distribution-certificate 与证书链匹配
+--> 使用发布 Profile(distribution-certificate)
+```
+
+签名切换的时间线也对得上:`.signing-backup/app.p7b.debug-20261118`
+的 mtime 是 **2026-11-17 23:32:18** —— 正是 1.0.2 构建那一刻
+(备份调试 Profile → 换上发布 Profile 构建 → 再换回来)✓。
+
+**1.0.3 的现状复核**(结论仍然成立 ✓):
+
+```
+$ python3 harmony/toolchain/verify_app_package.py
+  ✅ 包内 profile 类型 = release(发布 Profile)
+  ✅ 包内 profile 与 ohos/signing/app-release.p7b 完全一致
+合计: 10 项通过, 0 项失败
+```
+
+> 补充:Launch 也独立验过同一结论(`type=release`、`distribution-certificate` 有、
+> `development-certificate` 无、`devices=None`)✓ —— 两边结论一致 ✓。
+
+### 2026-11-20 补记 B:「导入 PDF 无响应 / .sba 无预览」的**独立复核**
+
+**结论**:补丁 0006 / 0007 **确实编进了 1.0.2 与 1.0.3 两个包** ✓;
+「鸿蒙不支持 PDF 导入」是**平台既定事实**(没有 pdfium),不是我们的 bug ✓;
+审核员看到的「无响应」是因为**提示是 Snackbar,一闪而过**,人工测试容易误判 ✗。
+
+**根因链**:
+
+| 层 | 事实 | 证据 |
+|---|---|---|
+| 平台 | 鸿蒙**没有 pdfium**,PDF 无法光栅化 | `patches/post/0001-Disable-prebuilt-pdfium.patch` 给 `packages/pdfium_dart/hook/build.dart` 的 `_downloadPdfium` 加了 `throw 'Cannot download prebuilt pdfium...'` ✓ |
+| 判定 | `Editor.canRasterPdf = info.canRaster`,鸿蒙上为 false | `lib/main.dart:102` ✓ |
+| 我们的应对 | 补丁 0006:命中 `!canRasterPdf` 时弹 Snackbar「当前平台暂不支持导入 PDF 文件」 | `harmony/patches/upstream/0006-lib-home-import-pdf-unsupported.patch` ✓ |
+| .sba 预览 | 补丁 0007:导出时把首页卡片缩略图 `<note>.sbn2.p` 一起打进压缩包 | `harmony/patches/upstream/0007-lib-sba-export-preview.patch` ✓ |
+
+**AOT 快照验证**(手法与当初查 "Welcome to Saber" 相同;
+注意 **Dart AOT 里的中文是 UTF-16**,按 UTF-8 查会误判):
+
+| 探针 | 1.0.2 包内 | 1.0.3 包内 | 判读 |
+|---|---|---|---|
+| `pdfImportUnsupported`(i18n 键名) | utf8=**1** | — | ✅ 补丁 0006 在包里 |
+| 「当前平台暂不支持导入 PDF 文件」 | utf16le=**1** | utf16le=**1** | ✅ 提示文案在 AOT 里 |
+| `.p` 预览后缀(`sbn2.p`) | utf8=**2** | — | ✅ 补丁 0007 在包里 |
+| 「赛博手写笔记」(改名对照,应查得到) | utf16le=2 | utf16le=**312** | ✅ 对照组正常 |
+| "Welcome to Saber"(旧名,应查不到) | 0 | 0 | ✅ 对照组正常 |
+
+**功能在鸿蒙版到底能不能用**:
+
+| 功能 | 鸿蒙版 | 原因 |
+|---|---|---|
+| 导入 PDF | ❌ **不支持**(平台限制) | 没有 pdfium;要支持得给鸿蒙交叉编译 pdfium —— 上游 `pdfium_dart` 只发 Android/Linux/macOS/Windows 预编译包,**没有现成二进制可用**,得从源码编译并适配 OHOS NDK 与三种 ABI,**量级在「天」不是「小时」**,且 AAB 体积会显著变大 ✓ |
+| 导入 .sba | ✅ 支持,首页卡片**有**预览 | 补丁 0007 已把缩略图一起打包 ✓ |
+
+**建议:本轮不做** ✓ —— 理由:① 报告里明确标为「可提升项 / 暂不影响APP上架」,**不是阻塞项** ✓;
+② 真正的阻塞项只有「应用资质」那条,客服已答复不用交授权书 ✓;
+③ 为一条明说不阻塞的建议项交叉编译 pdfium,风险大于收益 ✗。
+
+**另一条更轻的路**(若将来要支持):把 PDF **当图片导入**(只显示第一页截图),
+工作量小得多,但**功能不等价**,审核员若再测仍可能认为「导入不完整」✓。
+
+### 2026-11-20 补记 C:纠正一条**错的**记录 —— 1.0.2 的包里**没有** Sentry
+
+第 7 轮曾记录「1.0.2 是带着 Sentry 提交的,包里还有它」,
+并据此讨论过「撤回重提 vs 上架后发 1.0.4」。**实测:这个说法不成立** ✗。
+
+把 AGC 上 1.0.2 的原件拆开查 AOT 快照:
+
+| 探针 | 1.0.2 包内 | 1.0.3 包内 | 判读 |
+|---|---|---|---|
+| `ingest.de.sentry.io` | **0** | 0 | ✅ 没有 Sentry DSN 域名 |
+| `sentry.io` | **0** | 0 | ✅ 同上 |
+| DSN 指纹 `4509780710654032` | **0** | 0 | ✅ 没有硬编码 DSN |
+| `sentry_consent_dialog`(同意弹窗) | **0** | 0 | ✅ 没有同意弹窗 |
+| `settings_sentry`(设置项) | **0** | 0 | ✅ 没有设置项 |
+| `SentryFlutter`(SDK 类名) | **1** | 0 | ⚠️ 见下 |
+| `SentryConsent`(上游保留的枚举) | 2 | 2 | ✅ 上游本来就没删的枚举文件,非 SDK ✓ |
+
+> ⚠️ 唯一残留是 `SentryFlutter` 这个**字符串**(1.0.2 有、1.0.3 没有)——
+> 说明 1.0.2 里**引用过** sentry 包(可能只是 `pubspec.yaml` 依赖未清理),
+> 但**运行时不会真的上报**(没有 DSN、没有初始化代码)✓。
+> → 「1.0.2 会把崩溃数据发给上游」这个说法**过重了** ✗;
+> 真正要担心的是**依赖还在**(包体积/合规口径),不是**数据真的外传** ✓。
+> → 因此第 7 轮那条「若通过则上架后发 1.0.4 去掉 Sentry」的处置**可以取消** ✓ ——
+> 1.0.3 已经清干净了,直接用 1.0.3 重提即可 ✓。
+
+### 2026-11-20 补记 D:`.github-token` —— 明确标为**风险项**
+
+| 项 | 事实 |
+|---|---|
+| 文件 | `/root/hzq/saber-ohos/.github-token`,权限 `600`,属主 root ✓ |
+| 格式 | `GITHUB_TOKEN=<ghp_ 前缀的 40 字符 PAT>` ✓ |
+| 是否被引用 | ❌ 全盘 grep `github-token` **无任何脚本/配置引用** → 手动备用的副本 ✓ |
+| 实际生效的凭证 | `/root/.git-credentials`(`credential.helper=store`,`600`,主机 `github.com`,用户名 `brysj22952`)✓ |
+| 会被 git 带走吗 | ❌ **不会** —— `/root/hzq/saber-ohos` 根本不是 git 仓库(`git rev-parse` → `not a git repository`)✓,真正的仓库在下一层 `saber/` ✓ |
+
+> ⚠️ **风险项:明文 PAT 散落在仓库工作区之外的目录** ✓
+> —— 这类文件最容易随**整机备份 / 系统镜像 / 云盘同步**一起流出去,
+> 而且路径**不在任何 `.gitignore` 的保护范围内**(因为它压根不在仓库里)✗。
+>
+> 建议(按优先级):
+> 1. **首选**:改用 DSH 的 secret 机制存这个 PAT,
+>    需要时经 `$DSH_SECRET_GITHUB_TOKEN` 注入 → 磁盘上不留明文 ✓;
+> 2. **次选**:如果只是想能推,那就**只用 `.git-credentials`**(已经是 `600`),
+>    把这个多余副本删掉 —— 少一处密钥副本 = 少一处泄露面 ✓;
+> 3. **底线**:不要把它复制进 `saber/` 或任何会被打包/上传的目录 ✗✗
+>    (商店上传包、`release-artifacts/` 都要小心 ✓)。
+
+### 2026-11-20 补记 E:并行会话与本会话的改动**合并记录**
+
+11:27:36 有一个并行会话用同一 git 身份提交了 `e326d654`,内容与本会话的工作**重叠**
+(都改了审核报告抓取、轮询器留痕、文档)。为避免两套实现并存,合并后的结论是:
+
+| 文件 | 保留谁 | 理由 |
+|---|---|---|
+| `agc_audit_report.py` | **并行版** ✓ | 有 fixture 回归素材(`fixtures/audit_report_1.0.2.json`)、自测更全(10 项)、输出里明确区分「本轮未涉及 知识产权」✓ |
+| `agc_console.py` | **本会话版** ✓ | 加了 `CDP(target_id=...)` / `Frame(target_id=...)` —— 并行版没解决「定向挑应用页」这个问题,而主流程必须定向到**有左侧栏**的标签页,否则会连到审核报告页 ✗ |
+| `agc_audit_report.py` 的主流程 | **本会话补进并行版** ✓ | 在并行版基础上加了 `pick_console_target()`(挑 `.item-text` 数量 > 0 的那个标签页)+ `Frame(port, target_id=...)` ✓ —— 两版的长处都保住了 ✓ |
+| `agc_poll_review.sh` | **并行版** ✓ | 与本会话方案等价,且多了一步 `rm -f "$rep"`(防旧文件被误当成本次结果)✓ |
+
+> 教训:**同一台机器、同一份仓库、同一个 git 身份被两个会话同时改**时,
+> 后提交的那版会覆盖先提交的那版 ✓ →
+> 合并前必须**逐文件比对差异**再决定留哪版,否则会出现「文档说 A、代码是 B」的错位 ✗✗。

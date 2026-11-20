@@ -104,6 +104,31 @@ def pick_report_target(targets):
     return None
 
 
+def pick_console_target(port):
+    """挑「**有左侧栏**的控制台标签页」(应用详情/版本历史记录页)。
+
+    2026-11-20 实测踩到的坑:点「审核报告」会**新开**一个标签页
+    (URL 含 auditReportView),而那个页面**没有左侧栏**。
+    agc_console.CDP 默认连 `/json/list` 里的第一个 page 标签,
+    两个都是 developer.huawei.com → 排序并列 → 可能连到审核报告页 ✗
+    → 于是「版本历史记录」点不到,报「没抓到审核报告」✗。
+
+    判据:页面上 `.item-text`(左侧栏项)数量 > 0 的那个标签页 ✓。
+    """
+    for page in list_targets(port):
+        if page.get("type") != "page":
+            continue
+        try:
+            n = eval_in_target(page,
+                               "(() => document.querySelectorAll('.item-text').length)()")
+            n = int(n)
+        except Exception:
+            n = 0
+        if n > 0:
+            return page
+    return None
+
+
 def eval_in_target(target_info, expr, timeout=60):
     """在指定标签页的顶层上下文里求值。"""
     import websocket
@@ -390,7 +415,16 @@ def main():
         return 0
 
     before = {p.get("id") for p in list_targets(port)}
-    f = Frame(port)
+
+    # 2026-11-20 新增:定向挑「有左侧栏的控制台标签页」(见 pick_console_target)
+    console = pick_console_target(port)
+    if not console:
+        print("找不到有左侧栏的控制台标签页(是不是登录态过期了?)", file=sys.stderr)
+        return 8
+    console_id = console.get("id")
+    print("控制台标签页:%s" % console_id, file=sys.stderr)
+
+    f = Frame(port, target_id=console_id)
     try:
         # 1. 进「版本历史记录」
         if not click_sidebar(f, "版本历史记录"):
@@ -398,11 +432,12 @@ def main():
             f.c.send("Page.reload")
             time.sleep(16)
             f.close()
-            f = Frame(port)
+            f = Frame(port, target_id=console_id)
             click_sidebar(f, "版本历史记录")
         time.sleep(9)
         f.close()
-        f = Frame(port)
+        # 这里必须带上 target_id:不然又连回没有左侧栏的审核报告页 ✗
+        f = Frame(port, target_id=console_id)
 
         # 2. 在历史表格里找「审核报告」链接
         click_js = r"""(() => {

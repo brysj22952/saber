@@ -54,7 +54,7 @@ DIALOG = ".el-dialog, .el-drawer"
 # 底层 CDP 客户端
 # --------------------------------------------------------------------------- #
 class CDP:
-    def __init__(self, port=DEFAULT_PORT):
+    def __init__(self, port=DEFAULT_PORT, target_id=None):
         self.port = port
         with urllib.request.urlopen(
             "http://127.0.0.1:%s/json/list" % port, timeout=10
@@ -76,6 +76,14 @@ class CDP:
             return 2
 
         pages.sort(key=rank)
+        # 2026-11-20 新增:同名排序下(都是 developer.huawei.com)仍可能挑到
+        # 「审核报告」那个标签页 —— 它**没有左侧栏**,拿它当控制台主页会点不到
+        # 「版本历史记录」。所以允许调用方指定要用的标签页(按 target id)。
+        if target_id:
+            picked = [pg for pg in pages if pg.get("id") == target_id]
+            if not picked:
+                raise SystemExit("找不到指定的标签页 id=%s" % target_id)
+            pages = picked
         self.ws = websocket.create_connection(pages[0]["webSocketDebuggerUrl"], timeout=180)
         self._id = 0
 
@@ -108,8 +116,8 @@ class CDP:
 class Frame:
     """顶层文档 + 业务 iframe 的两个执行上下文。"""
 
-    def __init__(self, port=DEFAULT_PORT):
-        self.c = CDP(port)
+    def __init__(self, port=DEFAULT_PORT, target_id=None):
+        self.c = CDP(port, target_id=target_id)
         self.c.send("Page.enable")
         self.ctx = None
         tree = self.c.send("Page.getFrameTree")
