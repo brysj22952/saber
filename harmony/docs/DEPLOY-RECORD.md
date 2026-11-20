@@ -1571,3 +1571,62 @@ bash harmony/toolchain/agc/agc_poll_review.sh --self-test
 > ⚠️ 本文件**不记录 token 的值**,只记录「在哪、叫什么、怎么用」。
 > 既有结论不变:两处权限 `600`、属主 root ✓;`saber` 仓库不会把它 `git add` 带走 ✓;
 > 但**不要**把它复制进 `saber/` 或任何会被打包/上传的目录(商店上传包、`release-artifacts/`)✗✗。
+
+### 2026-11-20 补记 C:判定签名类型的**正确姿势**(别看文件名)
+
+**事实**:`ohos-default-signed.app` 这个名字**调试包与发布包完全一样** —— 不能据文件名判断签名类型。
+1.0.2 之所以被一度误判成「调试签名」,就是因为看了文件名 ✓。
+
+**正确做法**(二选一):
+
+1. **读包内 profile 的 `type` 字段**(最硬,推荐):
+
+   ```bash
+   cd /root/hzq/saber-ohos/saber
+   python3 harmony/toolchain/verify_app_package.py build/ohos/app/ohos-default-signed.app
+   ```
+
+   判据是输出里的 `✅ 包内 profile 类型 = release(发布 Profile)`;
+   同一条命令还会跑 `hap-sign-tool verify-app` 校验签名有效性、并核对 profile 与
+   `ohos/signing/app-release.p7b` 是否完全一致。
+   ⚠️ 要对 **.app** 跑,不是对 .app 里面的 hap(.app 里的 hap 是不带签名的)✓。
+
+2. **看构建日志**里这两行:
+
+   ```
+   ==> 4.5/5 校验 profile 与证书是否匹配
+       profile 类型: release,证书字段: distribution-certificate
+   --> 使用发布 Profile(distribution-certificate)
+   ```
+
+   (`/tmp/build_102.log` = 1.0.2 的构建日志,Nov 17 20:02)
+
+**1.0.3 本机产物的实测结论**(2026-11-20,首尔机执行):
+
+```
+=== build/ohos/app/ohos-default-signed.app (16.52 MB) ===
+  ✅ resources/base/media/icon.png 512×512 RGB,无 alpha 通道
+  ✅ resources/base/media/app_icon.png 512×512 RGB,无 alpha 通道
+  ✅ 包名 com.sabernotes.saber
+  ✅ 版本 versionName=1.0.3 versionCode=1000003
+  ✅ 包内能找到应用名「赛博手写笔记」
+  ✅ 包内无第三方崩溃上报/埋点 SDK(无 sentry 痕迹)
+  ✅ 包内只申请 ohos.permission.INTERNET 一个权限(与商店声明一致)
+  ✅ 签名校验通过(hap-sign-tool verify-app)
+  ✅ 包内 profile 类型 = release(发布 Profile)
+  ✅ 包内 profile 与 ohos/signing/app-release.p7b 完全一致
+
+合计: 10 项通过, 0 项失败
+```
+
+**md5 对齐 —— 用户要上传的就是这个包**:
+
+| 位置 | 大小 | md5 |
+|---|---|---|
+| 首尔机 `saber/build/ohos/app/ohos-default-signed.app` | 17,320,777 字节 | `0094975e96179b44f0cff396702ce025` |
+| 本机 `D:\saber-oh\release-staging\ohos-default-signed-1.0.3.app` | 17,320,777 字节 | `0094975E96179B44F0CFF396702CE025` |
+
+→ **同一个文件**,且已按 profile `type` 字段验过是**发布签名** ✓。
+
+**1.0.2 同样是发布签名**(`/tmp/build_102.log`「profile 类型: release,证书字段: distribution-certificate」)
+→ **1.0.2 被驳回与签名无关** ✓。
