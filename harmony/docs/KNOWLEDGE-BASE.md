@@ -324,23 +324,47 @@ python3 harmony/toolchain/agc/agc_store_check.py --app-id 6917621319756237551 --
 
 ## 4. GitHub 与凭据
 
-| 项 | 值 |
+### 4.1 remote 命名 —— **两台机器不一样，别搞混**
+
+| 位置 | `origin` | 另一个 remote |
+|---|---|---|
+| **本机** `D:\saber-oh\saber` | `https://github.com/brysj22952/saber.git`（**你的 fork**） | `upstream` = `https://github.com/saber-notes/saber.git` |
+| **首尔机** `/root/hzq/saber-ohos/saber` | `https://github.com/saber-notes/saber.git`（**上游**） | `fork` = `https://github.com/brysj22952/saber.git` |
+
+分支：`feature/ohos-harmonyos`（两边同名）
+
+### 4.2 凭据
+
+| 位置 | 机制 |
 |---|---|
-| remote `origin` | `https://github.com/saber-notes/saber.git`（上游） |
-| remote `fork` | `https://github.com/brysj22952/saber.git`（本项目） |
-| 分支 | `feature/ohos-harmonyos` |
-| 凭证（远端） | `credential.helper=store` → `/root/.git-credentials`（600，github.com / brysj22952） |
-| 凭证（远端另一处） | `/root/hzq/saber-ohos/.github-token`（600，`GITHUB_TOKEN=ghp_` 前缀 PAT） |
+| 本机 | **Windows 凭据管理器**（Git Credential Manager，`credential.helper=manager`）→ 目标 `git:https://github.com`，用户 `brysj22952` |
+| 首尔机 | `credential.helper=store` → `/root/.git-credentials`（600，github.com / brysj22952） |
+| 首尔机另一处 | `/root/hzq/saber-ohos/.github-token`（600，`GITHUB_TOKEN=ghp_` 前缀 PAT） |
 
 > ⚠️ **风险项**：`.github-token` 在 `saber` 仓库**之外**，不受版本控制约束，易随备份/镜像泄漏。
 > 建议改用 DSH secret 机制，或至少与 `.git-credentials` 同一套权限管理。
 
-**代理**：本机 `127.0.0.1:1080` 是 HTTP 代理（HTTP CONNECT 可用）。
-- ⚠️ **直连 github.com 会被 DNS 污染**到假 IP（57.155.223.240）—— 之前看到的「直连 200」是假象
-- git 全局曾误配 `socks5h://127.0.0.1:1081`（**1081 未监听**）→ `ls-remote` 直接失败，已改为 1080
-- 远端两 remote URL 均**无内嵌凭证**
+### 4.3 代理与 TLS（本机 git 的三个坑）
+
+本机 `127.0.0.1:1080` 是代理端口（HTTP CONNECT 可用）。
+
+| 坑 | 症状 | 解法 |
+|---|---|---|
+| **端口写错** | 曾配 `socks5h://127.0.0.1:1081`（1081 未监听）→ `ls-remote` 直接失败 | 指向 **1080** |
+| **scheme 不支持** | 用 `socks5h://` → `fatal: ServicePointManager 不支持具有 socks5h 方案的代理` | **必须用 `http://127.0.0.1:1080`** —— Windows 的 .NET ServicePointManager 不支持 socks5/socks5h |
+| **schannel 后端坏** | `SEC_E_NO_CREDENTIALS` / `SEC_E_INVALID_TOKEN`（curl 与 git 都中招） | 设 `http.sslbackend=openssl`（git 自带，不依赖系统 TLS 栈） |
+
+另外：**直连 github.com 会被 DNS 污染**到假 IP（57.155.223.240）—— 之前看到的「直连 200」是假象，必须走代理。
+
+当前已验证可用的全局配置：
+
+```
+http.https://github.com.proxy = http://127.0.0.1:1080
+http.sslbackend               = openssl
+```
 
 > **绝不记录密钥/token/cookie 的值**，只记「在哪、叫什么、怎么用」。
+
 
 ---
 
