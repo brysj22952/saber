@@ -1297,6 +1297,11 @@ profile: type=release / bundle-name=com.sabernotes.saber /
    (`#/auditReportView` 与 `#/myApp/…`),而 `agc_console.py` 的 `CDP` 连的是 `/json/list` 里的
    **第一个** page —— 顺序一变就读错页面(本轮把审核报告页误当成了应用页)。
    查状态/抓报告/读表单都要**先确认连的是哪个 target**。
+   **具体区分(2026-11-20 实测,别记反了)**:真正会**新开标签页**的是版本历史里的
+   「**审核报告**」链接(开在 `#/auditReportView`);而「**软件包管理**」**不会**新开标签页 ——
+   实测标签页数恒为 3,点「1.0.2 待修改」顶层 hash 变 `…/v2079739086494559168`、
+   点「软件包管理」变 `…/172249065903274627`,是**同一标签页内切换** ✓。
+   ⇒ 知识库里**不要**写「软件包管理会开新标签页」(我先前一度这么写,已更正)。
 2. **PowerShell 读 UTF-8 脚本要显式编码**:`Get-Content -Raw` 在 PS 5.1 下按 ANSI 读,
    中文变乱码,还会把注释行末尾的中文字吞掉换行 → 远端 `IndentationError`。
    正确写法 `[IO.File]::ReadAllText($p, [Text.Encoding]::UTF8)` 再 base64 传输。
